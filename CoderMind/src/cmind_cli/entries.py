@@ -3,7 +3,9 @@
 Provides:
 
 * :func:`main` — the ``cmind`` entry point. Installs optional harness adapters
-  before handing off to the legacy Typer application.
+  before handing off to the legacy Typer application. Host-driven adapters
+  explicitly remove their legacy AI-CLI mappings so CoderMind cannot fall back
+  to a nested Codex/Pi/OMP model invocation.
 * :func:`mcp_main` — the ``cmind-mcp`` console script. Sets up ``sys.path`` so
   that the bundled ``scripts/`` directory is importable, then hands off to
   ``mcp_server.main()``.
@@ -23,6 +25,14 @@ def main() -> None:
     from .agent_adapters import install
 
     install(core)
+
+    # ``codex`` is present in the upstream scaffold map as ``codex exec``.
+    # Host-driven adapters must never use those commands as LLM backends: the
+    # currently running Codex/Pi/OMP session supplies every model response via
+    # ``cmind host`` instead.
+    for agent in ("codex", "pi", "omp"):
+        core._AI_TO_CLI_CMD.pop(agent, None)
+
     core.main()
 
 
