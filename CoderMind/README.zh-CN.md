@@ -12,7 +12,7 @@
 
 编码智能体擅长局部编辑，但仓库级任务如果缺少稳定的规划结构往往会失败：需求漂移、架构决策丢失、多文件生成前后不一致、更新可能错过隐藏依赖。
 
-CoderMind 为 Claude Code 和 GitHub Copilot 提供一个面向仓库级编码的**持久化 RPG 工作区**。这个工作区围绕一个 **Repository Planning Graph (RPG)** 构建，把需求、功能、架构、文件、代码实体和依赖关系连接在一起。
+CoderMind 为 Claude Code、GitHub Copilot、Codex、Pi 和 oh-my-pi（OMP）提供一个面向仓库级编码的**持久化 RPG 工作区**。这个工作区围绕一个 **Repository Planning Graph (RPG)** 构建，把需求、功能、架构、文件、代码实体和依赖关系连接在一起。
 
 借助 CoderMind，智能体可以通过图驱动的工作流来工作：
 
@@ -90,7 +90,7 @@ MCP Server: search_rpg / explore_rpg / get_node_detail / list_rpg_tree
 - Python 3.12+
 - [uv](https://docs.astral.sh/uv/)
 - Git
-- 一个已安装并完成身份验证的 Coding Agent CLI：[GitHub Copilot](https://docs.github.com/en/copilot) 或 [Claude Code](https://docs.anthropic.com/en/docs/claude-code/setup)
+- 一个受支持的编码智能体：[Claude Code](https://docs.anthropic.com/en/docs/claude-code/setup)、[GitHub Copilot](https://docs.github.com/en/copilot)、Codex App/CLI/IDE、Pi 或 oh-my-pi（OMP）
 
 ### 安装 CoderMind
 
@@ -104,6 +104,28 @@ uvx --from "git+https://github.com/microsoft/RPG-ZeroRepo.git#subdirectory=Coder
 ```
 
 从 `0.1.3` 开始，wheel 会把 pipeline scripts 和 slash-command templates 作为打包资源一起发布，因此 `cmind init` 可以离线工作（例如 air-gapped 环境、公司代理环境等）。
+
+## 宿主驱动的智能体
+
+Codex、Pi 和 OMP 把 CoderMind 作为工作流与工具层。所有模型推理由当前智能体会话完成；CoderMind 不会在内部启动 `codex exec`、`pi -p` 或 `omp -p` 作为第二个智能体。
+
+根据使用的宿主初始化仓库：
+
+```bash
+cmind init . --ai codex
+cmind init . --ai pi
+cmind init . --ai omp
+```
+
+生成的集成包含 Agent Skills 和 RPG 工具：
+
+| 宿主 | Skills | RPG 工具集成 |
+| --- | --- | --- |
+| Codex App / CLI / IDE | `.agents/skills/cmind-*/SKILL.md` | `.codex/config.toml` → `cmind-mcp` |
+| Pi | `.agents/skills/cmind-*/SKILL.md` | 项目级 Pi MCP bridge → `cmind-mcp` |
+| OMP | `.omp/skills/cmind-*/SKILL.md` | `.omp/mcp.json` → `cmind-mcp` |
+
+旧流水线需要模型推理时，生成的 skill 会协调 `cmind host start`、`cmind host next` 和 `cmind host reply`。请求会返回当前对话会话，由当前智能体给出响应并继续流水线。协议与限制见[宿主驱动的智能体](docs/host-driven-agents.md)。
 
 ## 快速开始：新仓库
 
@@ -124,6 +146,9 @@ uvx --from "git+https://github.com/microsoft/RPG-ZeroRepo.git#subdirectory=Coder
    ```bash
    cmind init my-project --ai claude --script sh
    cmind init my-project --ai copilot
+   cmind init my-project --ai codex
+   cmind init my-project --ai pi
+   cmind init my-project --ai omp
    ```
 
 2. **[可选]** 把你的需求文档放在 `my-project/docs/`。
@@ -143,8 +168,10 @@ uvx --from "git+https://github.com/microsoft/RPG-ZeroRepo.git#subdirectory=Coder
 > [!IMPORTANT]
 > **不同 Coding Agent 的调用方式略有不同**：
 >
-> - **Claude Code**：直接在对话中输入 `/cmind.feature_construct ...`，slash command 会被识别并触发对应 workflow。
-> - **GitHub Copilot CLI**：不支持 slash command（但支持自定义 agent），需要先 `/agent cmind.feature_construct` 切换到目标 agent，然后输入 `start` 让它执行内置的 workflow。
+> - **Claude Code**：直接在对话中输入 `/cmind.feature_construct ...`。
+> - **GitHub Copilot CLI**：运行 `/agent cmind.feature_construct`，然后输入 `start`。
+> - **Codex App / CLI / IDE**：调用生成的 skill，例如 `$cmind-feature-construct` 或 `$cmind-rpg-edit`。
+> - **Pi 和 OMP**：调用生成的 skill，例如 `/skill:cmind-feature-construct` 或 `/skill:cmind-rpg-edit`。
 
 CoderMind 会渐进式地在 home-side 运行时目录（`~/.cmind/workspaces/<workspace-id>/data/rpg.json`）里创建 `rpg.json`，并用它把需求、规划产物、生成的代码和依赖信息保持对齐。你的工作区源文件不会被污染。
 
@@ -187,7 +214,9 @@ CoderMind 会渐进式地在 home-side 运行时目录（`~/.cmind/workspaces/<w
 ```text
 my-project/
 ├── docs/                 # /cmind.feature_construct 的可选需求文档
-├── .github/ or .claude/  # AI 助手的命令定义和设置
+├── .github/ or .claude/  # Copilot 或 Claude 的命令定义
+├── .agents/              # Codex/Pi 共用的 Agent Skills
+├── .codex/, .pi/, .omp/  # 各宿主的 MCP 与 skill 配置
 ├── .vscode/              # 适用时的 Copilot/VS Code MCP 配置
 ├── .cmind/              # 包含生成的报告和配置文件
 └── .git/hooks/           # cmind init 装的 post-commit / post-merge（每个 hook 仅一行：`cmind hook <name>`）
@@ -212,11 +241,13 @@ cmind update
 
 **Coding Agent 支持**：
 
-| Agent          | CLI 使用 | VS Code 扩展使用 |
-| -------------- | -------- | ---------------- |
-| Claude Code    | ✅        | ✅                |
-| GitHub Copilot | ✅        | ✅                |
-| Codex          | ⌛        | ⌛                |
+| 智能体 | 集成方式 | 状态 |
+| --- | --- | --- |
+| Claude Code | Commands 与 MCP | ✅ 已验证 |
+| GitHub Copilot | 自定义 agents 与 MCP | ✅ 已验证 |
+| Codex App / CLI / IDE | Agent Skills、MCP、宿主驱动执行 | 🧪 实验性 |
+| Pi | Agent Skills、项目级 MCP bridge、宿主驱动执行 | 🧪 实验性 |
+| oh-my-pi（OMP） | 原生 skills、MCP、宿主驱动执行 | 🧪 实验性 |
 
 **操作系统支持**：
 
@@ -231,6 +262,7 @@ cmind update
 - [Slash 命令参考](docs/commands.md) —— 每一个 `/cmind.*` 命令的输入、输出和示例。
 - [CLI 参考](docs/cli-reference.md) —— `cmind init`、`cmind update`、`cmind check`、`cmind version` 以及所有选项。
 - [配置](docs/configuration.md) —— AI 助手设置、MCP 注册、hook、自动审批和故障排查。
+- [宿主驱动的智能体](docs/host-driven-agents.md) —— Codex/Pi/OMP 的 skills、MCP 接线方式和无嵌套智能体执行协议。
 - [项目结构](docs/project-structure.md) —— CoderMind 创建的文件和目录。
 
 ## 即将推出的功能
@@ -241,7 +273,7 @@ cmind update
 
 ## 故障排查
 
-**找不到 AI 助手 CLI**：运行 `cmind check`，安装并完成所选助手 CLI 的身份验证，然后重新运行 `cmind init` 或 `cmind update`。
+**找不到智能体集成**：运行 `cmind check`，安装或打开所选宿主，然后重新运行 `cmind init` 或 `cmind update`。Codex App 用户需要打开已经初始化的仓库，使项目级 Skills 和 MCP 配置被发现。
 
 ## 许可证
 

@@ -1,17 +1,39 @@
 """Console-script entries for ``cmind-cli``.
 
-Currently provides:
+Provides:
 
-* :func:`mcp_main` — the ``cmind-mcp`` console script.  Sets up
-  ``sys.path`` so that the bundled ``scripts/`` directory is importable,
-  then hands off to ``mcp_server.main()``.
+* :func:`main` — the ``cmind`` entry point. Installs optional harness adapters
+  before handing off to the legacy Typer application. Host-driven adapters
+  explicitly remove their legacy AI-CLI mappings so CoderMind cannot fall back
+  to a nested Codex/Pi/OMP model invocation.
+* :func:`mcp_main` — the ``cmind-mcp`` console script. Sets up ``sys.path`` so
+  that the bundled ``scripts/`` directory is importable, then hands off to
+  ``mcp_server.main()``.
 
-This module stays small and stdout-silent because MCP uses stdio as
-its transport: anything written to stdout from import-time code would
-corrupt the JSON-RPC stream.  All diagnostics go to stderr.
+This module stays stdout-silent at import time because MCP uses stdio as its
+transport: anything written to stdout before the server starts would corrupt
+the JSON-RPC stream. All diagnostics go to stderr.
 """
 
 from __future__ import annotations
+
+
+def main() -> None:
+    """Console-script entry for the CoderMind CLI."""
+    import cmind_cli as core
+
+    from .agent_adapters import install
+
+    install(core)
+
+    # ``codex`` is present in the upstream scaffold map as ``codex exec``.
+    # Host-driven adapters must never use those commands as LLM backends: the
+    # currently running Codex/Pi/OMP session supplies every model response via
+    # ``cmind host`` instead.
+    for agent in ("codex", "pi", "omp"):
+        core._AI_TO_CLI_CMD.pop(agent, None)
+
+    core.main()
 
 
 def mcp_main() -> None:

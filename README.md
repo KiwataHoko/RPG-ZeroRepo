@@ -1,5 +1,10 @@
 # RPG-ZeroRepo
 
+<p>
+  <a href="README.md">English</a> |
+  <a href="README.zh-CN.md">简体中文</a>
+</p>
+
 **RPG-ZeroRepo turns Repository Planning Graphs into a control layer for long-horizon AI coding agents.**
 
 [![RPG-ZeroRepo: arXiv:2509.16198](https://img.shields.io/badge/Paper%201-arXiv%3A2509.16198-b31a1b)](https://arxiv.org/abs/2509.16198)
@@ -9,7 +14,7 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-🔥 **New: [CoderMind](CoderMind/) is now open source for Claude Code and GitHub Copilot.**
+🔥 **New: [CoderMind](CoderMind/) now supports Claude Code, GitHub Copilot, Codex App/CLI/IDE, Pi, and oh-my-pi (OMP).**
 
 Coding agents often lose repository-level context across long tasks: requirements drift, architecture decisions disappear, and edits miss hidden dependencies.
 
@@ -33,7 +38,8 @@ The repository also includes the research code: **[ZeroRepo](#zerorepo-requireme
 
 ## Documentation
 
-- [CoderMind Guide](CoderMind/README.md) — setup, slash commands, MCP tools
+- [CoderMind Guide](CoderMind/README.md) · [简体中文](CoderMind/README.zh-CN.md) — setup, Agent Skills, commands, and MCP tools
+- [Host-driven agents](CoderMind/docs/host-driven-agents.md) — Codex/Pi/OMP execution without nested agent processes
 - [CoderMind Commands Reference](CoderMind/docs/commands.md)
 - [CoderMind CLI Reference](CoderMind/docs/cli-reference.md)
 - [CoderMind Configuration](CoderMind/docs/configuration.md)
@@ -49,7 +55,7 @@ CoderMind turns Repository Planning Graphs into a control layer for long-horizon
 
 > Good planning for coding agents should be grounded, executable, verifiable, and reusable. CoderMind makes the plan a graph, not a transient chat artifact.
 
-CoderMind gives agents such as Claude Code and GitHub Copilot a persistent RPG workspace for planning, generation, repository understanding, and graph-aware editing.
+CoderMind gives Claude Code, GitHub Copilot, Codex, Pi, and OMP a persistent RPG workspace for planning, generation, repository understanding, and graph-aware editing.
 
 
 ### Why CoderMind?
@@ -84,10 +90,13 @@ cmind check
 
 ```bash
 cd your-existing-repo
-cmind init . --encode
-# In Claude Code or GitHub Copilot:
-# /cmind.rpg_edit  "Add rate limiting to all API endpoints"
+cmind init . --ai codex
+# In Codex App / CLI / IDE:
+# $cmind-encode
+# $cmind-rpg-edit  Add rate limiting to all API endpoints
 ```
+
+Use `--ai claude`, `--ai copilot`, `--ai pi`, or `--ai omp` for another host. Codex, Pi, and OMP are host-driven: the current session performs model reasoning, while CoderMind supplies workflows, RPG tools, and deterministic pipeline stages without launching a nested agent.
 
 **Generate a new repository:**
 
@@ -109,12 +118,12 @@ CoderMind gives Claude Code and GitHub Copilot a **persistent RPG workspace** fo
 CoderMind exposes the RPG workspace through three interfaces:
 
 - **CLI setup** — initialize CoderMind in a new or existing repository with `cmind init`.
-- **Slash commands** — run build, understand, and update workflows inside the coding agent (`/cmind.feature_spec`, `/cmind.code_gen`, `/cmind.encode`, `/cmind.rpg_edit`, and more).
+- **Agent workflows** — use slash commands, custom agents, or Agent Skills to run build, understand, and update workflows (`cmind-feature-construct`, `cmind-code-gen`, `cmind-encode`, `cmind-rpg-edit`, and more).
 - **MCP graph tools** — let the agent search, inspect, and traverse RPG nodes during coding (`search_rpg`, `explore_rpg`, `get_node_detail`, `list_rpg_tree`).
 
 CoderMind can keep the RPG in sync with code changes through a post-commit hook, so edits made by the agent or directly in code can be reflected back into the graph.
 
-**Supported agents:** Claude Code (verified), GitHub Copilot (verified).
+**Supported agents:** Claude Code and GitHub Copilot (verified); Codex App/CLI/IDE, Pi, and oh-my-pi (experimental host-driven adapters).
 
 ### CoderMind in action
 

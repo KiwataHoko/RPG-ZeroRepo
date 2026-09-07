@@ -38,7 +38,7 @@ dependencies = [
 ]
 
 [project.scripts]
-cmind = "cmind_cli:main"
+cmind = "cmind_cli.entries:main"
 cmind-mcp = "cmind_cli.entries:mcp_main"
 
 [project.urls]

@@ -15,7 +15,7 @@
 
 Coding agents are strong at local edits, but repo-level tasks often fail without a stable planning structure. Requirements drift, architecture decisions disappear, multi-file generation becomes inconsistent, and updates can miss hidden dependencies.
 
-CoderMind gives Claude Code and GitHub Copilot a **persistent RPG workspace** for repository-level coding. The workspace is built around a Repository Planning Graph (RPG) that connects requirements, features, architecture, files, code entities, and dependencies.
+CoderMind gives Claude Code, GitHub Copilot, Codex, Pi, and oh-my-pi (OMP) a **persistent RPG workspace** for repository-level coding. The workspace is built around a Repository Planning Graph (RPG) that connects requirements, features, architecture, files, code entities, and dependencies.
 
 With CoderMind, agents work through graph-driven workflows:
 
@@ -93,7 +93,7 @@ Below is part of the graph visualization generated for this repository. After ru
 - Python 3.12+
 - [uv](https://docs.astral.sh/uv/)
 - Git
-- An installed and authenticated AI coding agent CLI: [GitHub Copilot](https://docs.github.com/en/copilot) or [Claude Code](https://docs.anthropic.com/en/docs/claude-code/setup)
+- A supported coding agent: [Claude Code](https://docs.anthropic.com/en/docs/claude-code/setup), [GitHub Copilot](https://docs.github.com/en/copilot), Codex App/CLI/IDE, Pi, or oh-my-pi (OMP)
 
 ### Install CoderMind
 
@@ -107,6 +107,28 @@ uvx --from "git+https://github.com/microsoft/RPG-ZeroRepo.git#subdirectory=Coder
 ```
 
 Since `0.1.3`, the wheel ships the pipeline scripts and slash-command templates as packaged assets, so `cmind init` works offline (for example in air-gapped or corporate proxy environments).
+
+## Host-driven agents
+
+Codex, Pi, and OMP use CoderMind as a workflow and tool layer. The current agent session performs all model reasoning; CoderMind does not launch `codex exec`, `pi -p`, or `omp -p` as a nested agent.
+
+Initialize the repository for the host you use:
+
+```bash
+cmind init . --ai codex
+cmind init . --ai pi
+cmind init . --ai omp
+```
+
+The generated integration contains Agent Skills plus RPG tools:
+
+| Host | Skills | RPG tool integration |
+| --- | --- | --- |
+| Codex App / CLI / IDE | `.agents/skills/cmind-*/SKILL.md` | `.codex/config.toml` → `cmind-mcp` |
+| Pi | `.agents/skills/cmind-*/SKILL.md` | project-local Pi MCP bridge → `cmind-mcp` |
+| OMP | `.omp/skills/cmind-*/SKILL.md` | `.omp/mcp.json` → `cmind-mcp` |
+
+When a legacy pipeline needs model reasoning, the generated skill coordinates `cmind host start`, `cmind host next`, and `cmind host reply`. The request is returned to the current chat session, which supplies the response and continues the pipeline. See [Host-driven agents](docs/host-driven-agents.md) for the protocol and limitations.
 
 ## Quick Start: New Repository
 
@@ -127,6 +149,9 @@ Use this path when you want CoderMind to turn requirements into a new codebase.
    ```bash
    cmind init my-project --ai claude --script sh
    cmind init my-project --ai copilot
+   cmind init my-project --ai codex
+   cmind init my-project --ai pi
+   cmind init my-project --ai omp
    ```
 
 2. **[Optional]** place your requirement documents in `my-project/docs/`.
@@ -146,8 +171,10 @@ Use this path when you want CoderMind to turn requirements into a new codebase.
 > [!IMPORTANT]
 > **Coding Agents are invoked slightly differently**:
 >
-> - **Claude Code**: type `/cmind.feature_construct ...` directly in the chat — slash commands are recognised and dispatch the matching workflow.
-> - **GitHub Copilot CLI**: slash commands are not supported (custom agents are), so first run `/agent cmind.feature_construct` to switch to the target agent, then type `start` to run its built-in workflow.
+> - **Claude Code**: type `/cmind.feature_construct ...` directly in the chat.
+> - **GitHub Copilot CLI**: run `/agent cmind.feature_construct`, then type `start`.
+> - **Codex App / CLI / IDE**: invoke the generated skill, for example `$cmind-feature-construct` or `$cmind-rpg-edit`.
+> - **Pi and OMP**: invoke the generated skill, for example `/skill:cmind-feature-construct` or `/skill:cmind-rpg-edit`.
 
 CoderMind progressively builds `rpg.json` in the home-side runtime directory (`~/.cmind/workspaces/<workspace-id>/data/rpg.json`) and uses it to keep requirements, planning artifacts, generated code, and dependency information aligned. Your workspace source files are not polluted.
 
@@ -190,7 +217,9 @@ Use this path when you already have a repository and want an AI agent to underst
 ```text
 my-project/
 ├── docs/                 # Optional requirement docs for /cmind.feature_construct
-├── .github/ or .claude/  # Coding Agent command definitions and settings
+├── .github/ or .claude/  # Copilot or Claude command definitions
+├── .agents/              # Shared Codex/Pi Agent Skills
+├── .codex/, .pi/, .omp/  # Host-specific MCP and skill configuration
 ├── .vscode/              # Copilot/VS Code MCP configuration when applicable
 ├── .cmind/              # Generated reports and configuration files
 └── .git/hooks/           # post-commit / post-merge installed by cmind init (each hook is one line: `cmind hook <name>`)
@@ -215,11 +244,13 @@ cmind update
 
 **Coding Agent support**:
 
-| Agent          | CLI usage | VS Code extension usage |
-| -------------- | --------- | ----------------------- |
-| Claude Code    | ✅        | ✅                      |
-| GitHub Copilot | ✅        | ✅                      |
-| Codex          | ⌛        | ⌛                      |
+| Agent | Integration | Status |
+| --- | --- | --- |
+| Claude Code | Commands and MCP | ✅ Verified |
+| GitHub Copilot | Custom agents and MCP | ✅ Verified |
+| Codex App / CLI / IDE | Agent Skills, MCP, host-driven execution | 🧪 Experimental |
+| Pi | Agent Skills, project MCP bridge, host-driven execution | 🧪 Experimental |
+| oh-my-pi (OMP) | Native skills, MCP, host-driven execution | 🧪 Experimental |
 
 **Operating system support**:
 
@@ -234,6 +265,7 @@ cmind update
 - [Slash command reference](docs/commands.md) — every `/cmind.*` command, inputs, outputs, and examples.
 - [CLI reference](docs/cli-reference.md) — `cmind init`, `cmind update`, `cmind check`, `cmind version`, and all options.
 - [Configuration](docs/configuration.md) — AI assistant setup, MCP registration, hooks, auto-approval, and troubleshooting.
+- [Host-driven agents](docs/host-driven-agents.md) — Codex/Pi/OMP skills, MCP wiring, and the no-nested-agent execution protocol.
 - [Project structure](docs/project-structure.md) — files and directories created by CoderMind.
 
 ## Upcoming Features
@@ -244,7 +276,7 @@ cmind update
 
 ## Troubleshooting
 
-**AI assistant CLI not found:** run `cmind check`, install and authenticate the selected assistant CLI, then rerun `cmind init` or `cmind update`.
+**Agent integration not found:** run `cmind check`, install or open the selected host, then rerun `cmind init` or `cmind update`. Codex App users should open the initialized repository so its project Skills and MCP configuration are discovered.
 
 ## License
 

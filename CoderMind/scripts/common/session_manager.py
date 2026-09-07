@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 
 class TraceContext:
-    """Holds the result of a session-trace capture.
+    """Holds the result of a single session-trace capture.
 
     Attributes:
         extra_args: Additional CLI arguments the manager wants injected
@@ -214,20 +214,49 @@ class SessionManager(ABC):
 
 
 # ============================================================================
-# Null manager (no-op, used when no CLI-specific handling is needed)
+# Null manager (generic stdin fallback for unregistered CLIs)
 # ============================================================================
 
 class NullSessionManager(SessionManager):
-    """A no-op manager that never captures anything.
+    """Generic stdin-based manager for CLIs without special session handling.
 
-    Used when the CLI tool does not produce session files or when
-    session management is not desired.
+    Modern headless coding agents such as ``codex exec``, ``pi -p`` and
+    ``omp -p`` accept prompts from stdin.  The previous no-op implementation
+    never delivered the prompt to unregistered agents, so their subprocesses
+    started without a task.
     """
 
+    def __init__(
+        self,
+        project_dir: Path,
+        trace_filename_builder: Optional[Callable[[str], str]] = None,
+        logger: Optional[logging.Logger] = None,
+    ) -> None:
+        super().__init__(
+            project_dir=project_dir,
+            trace_filename_builder=trace_filename_builder,
+            logger=logger,
+        )
+        self._stdin_fh: Optional[Any] = None
+
     def before(self, ctx: TraceContext, prompt: str) -> None:
-        pass
+        self._cleanup_stdin()
+        self._stdin_fh = tempfile.TemporaryFile(mode="w+", encoding="utf-8")
+        self._stdin_fh.write(prompt)
+        self._stdin_fh.flush()
+        self._stdin_fh.seek(0)
+        ctx.stdin = self._stdin_fh
+
+    def _cleanup_stdin(self) -> None:
+        if self._stdin_fh is not None:
+            try:
+                self._stdin_fh.close()
+            except Exception:
+                pass
+            self._stdin_fh = None
 
     def after(self, purpose: str) -> Optional[Path]:
+        self._cleanup_stdin()
         return None
 
 
