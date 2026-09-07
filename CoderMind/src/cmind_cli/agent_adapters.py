@@ -175,6 +175,8 @@ def _configure_codex_mcp(project_path: Path) -> None:
             ) from exc
 
     servers = parsed.get("mcp_servers", {})
+    if servers and not isinstance(servers, dict):
+        raise ValueError(f"Expected mcp_servers to be a table in {config_path}")
     existing = servers.get("rpg_tools") if isinstance(servers, dict) else None
     if existing is not None:
         # Respect a user-customized server.  An in-sync CoderMind entry is
@@ -212,6 +214,7 @@ def _configure_omp_mcp(project_path: Path) -> None:
 
 
 _PI_MCP_EXTENSION = r'''import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import { Type } from "@sinclair/typebox";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { createInterface } from "node:readline";
 
@@ -251,15 +254,18 @@ class McpStdioClient {
       else waiter.resolve(message.result);
     });
 
-    child.on("exit", (code) => {
-      const error = new Error(`cmind-mcp exited with code ${code ?? "unknown"}`);
+    const failAll = (error: Error) => {
       for (const waiter of this.pending.values()) waiter.reject(error);
       this.pending.clear();
       this.child = null;
+    };
+    child.on("error", (error) => failAll(error));
+    child.on("exit", (code) => {
+      failAll(new Error(`cmind-mcp exited with code ${code ?? "unknown"}`));
     });
 
     child.stderr.on("data", () => {
-      // MCP diagnostics stay off stdout; Pi will surface tool-call failures.
+      // Drain diagnostics so a verbose server cannot fill the stderr pipe.
     });
 
     await this.request("initialize", {
@@ -303,7 +309,7 @@ export default async function (pi: ExtensionAPI) {
       name: `mcp_rpg_tools_${tool.name}`,
       label: `CoderMind: ${tool.name}`,
       description: tool.description ?? `CoderMind RPG tool ${tool.name}`,
-      parameters: tool.inputSchema ?? { type: "object", properties: {} },
+      parameters: Type.Unsafe(tool.inputSchema ?? { type: "object", properties: {} }),
       async execute(_toolCallId, params) {
         const result = await client.request("tools/call", {
           name: tool.name,
