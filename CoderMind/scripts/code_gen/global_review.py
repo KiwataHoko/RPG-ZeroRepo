@@ -315,6 +315,7 @@ After fixing visual issues, re-inspect to verify the fix.
 - Pages inspected: [N]
 - Forms tested: [N]
 - Screenshots taken: [N]
+- CLI screens inspected: [N]
 - Code fixes applied: [N files changed]
 ```
 
@@ -350,7 +351,8 @@ After fixing visual issues, re-inspect to verify the fix.
   1. Every FR is `[x]` or `[~]` in Functional Verification
   2. Every page is `[x]` or `[~]` in Visual Quality (web/GUI only)
   3. All Discovered Issues are `[x]` or `[~]` (no unresolved `[ ]`)
-  4. You actually used browser/GUI tools (not just curl)
+  4. For WEB/GUI/GAME projects, you actually used browser/GUI tools (not just
+     curl); for CLI projects, you actually ran and inspected CLI screens
 - `CONTINUE`: Whenever there are `[ ]` or `[-]` items in any section.
   This is NOT a failure — it means the next iteration will continue.
 - `BLOCKED`: Only for showstopper issues that prevent ANY verification.
@@ -760,6 +762,7 @@ def _extract_review_checklist(response: str) -> Dict[str, Any]:
         pages_inspected: int
         forms_tested: int
         screenshots_taken: int
+        cli_screens_inspected: int
     """
     def _empty_section() -> Dict[str, list]:
         return {"verified": [], "fixed": [], "failed": [], "not_tested": []}
@@ -773,6 +776,7 @@ def _extract_review_checklist(response: str) -> Dict[str, Any]:
         "pages_inspected": 0,
         "forms_tested": 0,
         "screenshots_taken": 0,
+        "cli_screens_inspected": 0,
     }
 
     # Map heading text → which content section to fill
@@ -842,6 +846,10 @@ def _extract_review_checklist(response: str) -> Dict[str, Any]:
             if m:
                 result["screenshots_taken"] = int(m.group(1))
                 continue
+            m = re.match(r'^-\s*CLI screens inspected:\s*(\d+)', stripped, re.IGNORECASE)
+            if m:
+                result["cli_screens_inspected"] = int(m.group(1))
+                continue
 
     # Fallback: also try old-style FR lines (FR1: ... — PASS/FAIL)
     func = result["functional"]
@@ -855,6 +863,38 @@ def _extract_review_checklist(response: str) -> Dict[str, Any]:
                     func["failed"].append(stripped)
 
     return result
+
+
+def _review_tool_evidence(
+    checklist: Dict[str, Any],
+    feature_spec: Dict[str, Any],
+) -> Tuple[bool, str]:
+    """Validate interaction evidence for the project's declared surfaces.
+
+    Browser/GUI evidence is mandatory only when the feature specification
+    declares a visual surface. CLI projects instead satisfy the requirement by
+    reporting an inspected CLI screen. Projects without an interactive surface
+    do not need synthetic screenshot evidence. Missing project metadata keeps
+    the historical, conservative visual requirement.
+    """
+    raw_types = feature_spec.get("meta", {}).get("project_types")
+    if isinstance(raw_types, str):
+        raw_types = raw_types.replace(";", ",").split(",")
+    project_types = {
+        item.strip().upper()
+        for item in (raw_types or [])
+        if isinstance(item, str) and item.strip()
+    }
+
+    pages = int(checklist.get("pages_inspected", 0) or 0)
+    screenshots = int(checklist.get("screenshots_taken", 0) or 0)
+    cli_screens = int(checklist.get("cli_screens_inspected", 0) or 0)
+
+    if not project_types or project_types.intersection({"WEB", "GUI", "GAME"}):
+        return pages > 0 or screenshots > 0, "visual"
+    if "CLI" in project_types:
+        return cli_screens > 0, "cli"
+    return True, "none"
 
 
 def _parse_review_result(response: Optional[str]) -> Tuple[bool, str]:
@@ -1218,23 +1258,36 @@ def global_review(
         except Exception as exc:
             logger.debug("Stub check during review post-verify failed: %s", exc)
 
-        # Framework-level tool usage validation:
-        # If agent claims DONE but never inspected any pages, override to CONTINUE
+        # Framework-level tool usage validation. Match required evidence to the
+        # user-facing surfaces declared by feature_spec metadata.
         tools_used = False
         if checklist:
             pages = checklist.get("pages_inspected", 0)
             screenshots = checklist.get("screenshots_taken", 0)
-            tools_used = pages > 0 or screenshots > 0
+            cli_screens = checklist.get("cli_screens_inspected", 0)
+            tools_used, evidence_requirement = _review_tool_evidence(
+                checklist, _load_feature_spec()
+            )
             if review_passed and not tools_used:
-                logger.warning(
-                    "Agent reported DONE but pages_inspected=%d, screenshots=%d "
-                    "— overriding to CONTINUE (visual verification required)",
-                    pages, screenshots,
-                )
+                if evidence_requirement == "cli":
+                    logger.warning(
+                        "Agent reported DONE but cli_screens_inspected=%d "
+                        "— overriding to CONTINUE (CLI verification required)",
+                        cli_screens,
+                    )
+                    missing_evidence = "did not inspect a CLI screen"
+                else:
+                    logger.warning(
+                        "Agent reported DONE but pages_inspected=%d, screenshots=%d "
+                        "— overriding to CONTINUE (visual verification required)",
+                        pages, screenshots,
+                    )
+                    missing_evidence = (
+                        "did not use browser/GUI tools for visual verification"
+                    )
                 review_passed = False
                 detail = (
-                    "CONTINUE (overridden: agent claimed DONE but did not use "
-                    "browser/GUI tools for visual verification)"
+                    f"CONTINUE (overridden: agent claimed DONE but {missing_evidence})"
                 )
 
         # Override DONE if post-pytest failed (agent's fixes may have broken tests)
@@ -1318,6 +1371,7 @@ def global_review(
             cl_stats["pages_inspected"] = checklist.get("pages_inspected", 0)
             cl_stats["forms_tested"] = checklist.get("forms_tested", 0)
             cl_stats["screenshots_taken"] = checklist.get("screenshots_taken", 0)
+            cl_stats["cli_screens_inspected"] = checklist.get("cli_screens_inspected", 0)
 
         iteration_result = {
             "iteration": iteration,
@@ -1372,5 +1426,4 @@ def global_review(
         pass
 
     return results
-
 
