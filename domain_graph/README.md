@@ -13,6 +13,17 @@ The stable public surface is exported from `domain_graph`:
 - `DomainNode` and `DomainEdge` are the neutral data model.
 - `DomainAdapter` is the integration boundary for domain-specific adapters.
 
+## Install
+
+From this repository:
+
+```bash
+python -m pip install -e ./domain_graph
+```
+
+The distribution name is `domain-graph`; the import package remains
+`domain_graph`. Version `0.1.0` has no runtime dependencies.
+
 Schemas are open-world by default. Undeclared string entity types and
 relations are accepted and reported by `graph.validate()`. Use
 `strict_schema=True` to reject undeclared symbols at mutation time.
@@ -37,3 +48,23 @@ graph.add_edge("claim-1", "evidence-1", "contains")
 payload = graph.to_json()
 restored = DomainGraph.from_json(payload)
 ```
+
+## Reference research adapter
+
+`domain_graph.adapters.research` is a non-code reference implementation. It
+declares `question`, `claim`, `evidence`, and `source` entities together with
+`contains`, `supports`, `contradicts`, and `derived_from` relations.
+
+```python
+from domain_graph.adapters import ResearchDomainAdapter
+
+adapter = ResearchDomainAdapter()
+graph = adapter.create_graph("paper", strict_schema=True)
+graph.add_node("q1", "question")
+graph.add_node("c1", "claim")
+graph.add_edge("q1", "c1", "contains")
+```
+
+The adapter is intentionally outside the core root API. New domains can add
+their own adapters without modifying the graph implementation or extending a
+central enum.

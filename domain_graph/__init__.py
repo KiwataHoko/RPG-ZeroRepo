@@ -1,5 +1,7 @@
 """Stable public API for the standalone domain graph core."""
 
+__version__ = "0.1.0"
+
 from .adapter import DomainAdapter
 from .graph import (
     DomainGraph,
@@ -13,6 +15,7 @@ from .model import DomainEdge, DomainNode
 from .schema import DomainSchema, RelationSpec, SchemaViolation, symbol_value
 
 __all__ = [
+    "__version__",
     "DomainAdapter",
     "DomainEdge",
     "DomainGraph",
