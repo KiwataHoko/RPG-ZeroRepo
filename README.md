@@ -16,6 +16,8 @@
 
 🔥 **New: [CoderMind](CoderMind/) now supports Claude Code, GitHub Copilot, Codex App/CLI/IDE, Pi, and oh-my-pi (OMP).**
 
+🧩 **[Domain Graph 0.1.1](https://github.com/KiwataHoko/RPG-ZeroRepo/releases/tag/domain-graph-v0.1.1) is available as a standalone, domain-neutral Python package.**
+
 Coding agents often lose repository-level context across long tasks: requirements drift, architecture decisions disappear, and edits miss hidden dependencies.
 
 CoderMind gives agents a **persistent RPG workspace** so they can plan, generate, understand, and update repositories through a shared graph instead of transient chat history and file search.
@@ -26,6 +28,7 @@ The repository also includes the research code: **[ZeroRepo](#zerorepo-requireme
 
 ## News
 
+- [2026-09-09] 🧩 **Domain Graph 0.1.1** is available as a standalone package with a stable v1 JSON format, schema-defined hierarchy semantics, immutable compatibility fixtures, and validation against the real CoderMind code-domain adapter.
 - [2026-05-15] 🚀 **CoderMind** is now open source for Claude Code and GitHub Copilot. It uses Repository Planning Graphs as a control layer for long-horizon coding agents, including planning, multi-file generation, repository understanding, and graph-aware updates.
 - [2026-05-01] 🎉 **RPG-Encoder** ([*Closing the Loop: Universal Repository Representation with RPG-Encoder*](https://arxiv.org/abs/2602.02084)) has been accepted to **ICML 2026**.
 - [2026-03-02] 🚀 We have open-sourced the **EpiCoder Feature Tree** at [Hugging Face](https://huggingface.co/datasets/microsoft/EpiCoder-meta-features), providing structured knowledge for repository planning in **ZeroRepo**.
@@ -38,6 +41,9 @@ The repository also includes the research code: **[ZeroRepo](#zerorepo-requireme
 
 ## Documentation
 
+- [Domain Graph Guide](domain_graph/README.md) — installation, public API, schemas, queries, and adapters
+- [Domain Graph Compatibility Policy](domain_graph/COMPATIBILITY.md) — v1 wire contract, golden fixtures, migrations, and adapter acceptance
+- [Domain Graph Changelog](domain_graph/CHANGELOG.md)
 - [CoderMind Guide](CoderMind/README.md) · [简体中文](CoderMind/README.zh-CN.md) — setup, Agent Skills, commands, and MCP tools
 - [Host-driven agents](CoderMind/docs/host-driven-agents.md) — Codex/Pi/OMP execution without nested agent processes
 - [CoderMind Commands Reference](CoderMind/docs/commands.md)
@@ -57,13 +63,12 @@ CoderMind turns Repository Planning Graphs into a control layer for long-horizon
 
 CoderMind gives Claude Code, GitHub Copilot, Codex, Pi, and OMP a persistent RPG workspace for planning, generation, repository understanding, and graph-aware editing.
 
-
 ### Why CoderMind?
 
 Coding agents are strong at local edits, but repository-level work requires durable context: requirements, architecture, implementation progress, and dependencies must stay aligned across many steps.
 
 | Without CoderMind | With CoderMind |
-|---|---|
+| --- | --- |
 | The agent relies on chat history and file search. | The agent works against a structured RPG workspace. |
 | Requirements and design decisions drift over long tasks. | Requirements, features, architecture, and files stay connected in the graph. |
 | Multi-file generation can become inconsistent. | Generation follows an explicit planning graph. |
@@ -73,7 +78,7 @@ Coding agents are strong at local edits, but repository-level work requires dura
 ### What can I do with CoderMind?
 
 | Task | Start from | CoderMind workflow | Benefit |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | **Build a new repository** | A natural-language requirement | Create an RPG plan, refine it into architecture/tasks, then generate code. | A persistent plan for long-horizon multi-file generation. |
 | **Understand an existing repository** | An existing codebase | Encode the repo into an RPG workspace, then search, explore, and explain through MCP tools (`search_rpg`, `explore_rpg`, `get_node_detail`). | A structured repository map beyond chat history and file search. |
 | **Update an existing repository** | A codebase + change request | Use the RPG to locate affected nodes, plan the edit, and update code and graph together (`/cmind.rpg_edit "..."`). | Graph-aware edits that account for cross-file dependencies. |
@@ -137,11 +142,46 @@ See [`CoderMind/`](CoderMind/) for the full guide.
 
 ---
 
+## Domain Graph core
+
+[`domain_graph`](domain_graph/) is the standalone graph foundation extracted
+from CoderMind. It provides domain-neutral nodes and edges, schema-defined
+vocabularies, hierarchy traversal, validation, and a versioned JSON wire
+format without depending on CoderMind or code-specific enums.
+
+Install the current release directly from GitHub:
+
+```bash
+python -m pip install \
+  https://github.com/KiwataHoko/RPG-ZeroRepo/releases/download/domain-graph-v0.1.1/domain_graph-0.1.1-py3-none-any.whl
+```
+
+```python
+from domain_graph import DomainGraph, DomainSchema, RelationSpec
+
+schema = DomainSchema(
+    "research",
+    entity_types=("claim", "evidence"),
+    relations=(RelationSpec("supports"),),
+)
+graph = DomainGraph("paper", schema, strict_schema=True)
+graph.add_node("claim-1", "claim")
+graph.add_node("evidence-1", "evidence")
+graph.add_edge("evidence-1", "claim-1", "supports")
+```
+
+Version 0.1.1 supports Python 3.10+, has no runtime dependencies, and keeps
+the v1 JSON format backward compatible across the 0.1.x line. See the
+[package guide](domain_graph/README.md), [compatibility policy](domain_graph/COMPATIBILITY.md),
+and [0.1.1 release](https://github.com/KiwataHoko/RPG-ZeroRepo/releases/tag/domain-graph-v0.1.1).
+
+---
+
 ## Standalone research code
 
 ZeroRepo and RPG-Encoder are the standalone research pipelines for constructing RPGs:
 
-```
+```text
 requirements → RPG → repository      # ZeroRepo
 repository → RPG                     # RPG-Encoder
 ```
@@ -149,7 +189,7 @@ repository → RPG                     # RPG-Encoder
 CoderMind (above) is the agent-facing layer that uses RPGs from either direction. The components below run **without an agent CLI** — useful for paper reproduction and benchmarking.
 
 | Component | Use it for |
-|---|---|
+| --- | --- |
 | **[ZeroRepo](#zerorepo-requirements--rpg--repository)** | Reproduce the RPG paper's forward pipeline. |
 | **[RPG-Encoder](#rpg-encoder-repository--rpg)** | Reproduce the RPG-Encoder paper's reverse pipeline. |
 | **[RepoCraft](#repocraft-benchmark)** | Evaluate repository-level code generation. |
@@ -195,7 +235,7 @@ This enables agents to:
 #### Three mechanisms
 
 | Mechanism | Module | Description |
-|---|---|---|
+| --- | --- | --- |
 | **Encoding** | `rpg_parsing/` | Extracts RPG from raw codebases via semantic lifting, structure reorganization, and artifact grounding |
 | **Evolution** | `rpg_parsing/rpg_evolution.py` | Incrementally maintains RPGs via commit-level diff parsing, avoiding full re-encoding after every change |
 | **Operation** | `rpg_agent/` | Provides a unified agentic interface (SearchNode, FetchNode, ExploreRPG) for structure-aware navigation |
@@ -225,7 +265,7 @@ RepoCraft is the benchmark and evaluation suite for repository-level code genera
 It consists of **1,052 tasks** across 6 real-world Python projects (scikit-learn, pandas, sympy, statsmodels, requests, django).
 
 | Metric | Description |
-|---|---|
+| --- | --- |
 | **Coverage** | Proportion of reference feature categories covered |
 | **Accuracy** | Pass Rate (unit tests) and Voting Rate (semantic checks) |
 | **Code Statistics** | File count, Lines of Code (LOC), Token count |

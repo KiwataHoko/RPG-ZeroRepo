@@ -1,5 +1,9 @@
 # Domain Graph core
 
+[![Release: 0.1.1](https://img.shields.io/badge/release-0.1.1-blue.svg)](https://github.com/KiwataHoko/RPG-ZeroRepo/releases/tag/domain-graph-v0.1.1)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Wire format: v1](https://img.shields.io/badge/wire%20format-v1-green.svg)](./COMPATIBILITY.md)
+
 `domain_graph` is the domain-neutral graph core extracted from CoderMind. It
 has no dependency on CoderMind, RPG, repository analysis, or code-specific
 entity enums.
@@ -34,6 +38,9 @@ Release artifacts include both a wheel and source distribution plus SHA-256
 checksums. The release workflow verifies the package metadata, runs the core
 and adapter tests, and installs both artifacts in clean virtual environments
 before publishing the GitHub Release.
+
+Release resources: [0.1.1 downloads](https://github.com/KiwataHoko/RPG-ZeroRepo/releases/tag/domain-graph-v0.1.1)
+· [changelog](./CHANGELOG.md) · [compatibility policy](./COMPATIBILITY.md).
 
 ## Compatibility
 
