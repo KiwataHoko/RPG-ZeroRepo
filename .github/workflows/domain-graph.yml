@@ -29,15 +29,19 @@ jobs:
     name: v1 compatibility (Python 3.12)
     runs-on: ubuntu-latest
     env:
-      CURRENT_PAYLOAD: ${{ runner.temp }}/domain-graph-current-v1.json
       FIXTURE_DIR: ${{ github.workspace }}/domain_graph/tests/fixtures/v1
-      RELEASE_VENV: ${{ runner.temp }}/domain-graph-release-venv
       RELEASE_WHEEL_URL: https://github.com/${{ github.repository }}/releases/download/domain-graph-v0.1.0/domain_graph-0.1.0-py3-none-any.whl
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Define runner paths
+        run: |
+          printf '%s\n' \
+            "CURRENT_PAYLOAD=${RUNNER_TEMP}/domain-graph-current-v1.json" \
+            "RELEASE_VENV=${RUNNER_TEMP}/domain-graph-release-venv" \
+            >> "${GITHUB_ENV}"
       - name: Install current checkout
         run: |
           python -m pip install --upgrade pip
