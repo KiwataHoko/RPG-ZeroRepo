@@ -1,0 +1,18 @@
+{
+  "format": "domain-graph",
+  "version": 1,
+  "name": "minimal",
+  "schema": {
+    "name": "minimal",
+    "entity_types": ["root", "leaf"],
+    "relations": [{"name": "contains", "hierarchy": true}]
+  },
+  "strict_schema": true,
+  "nodes": [
+    {"id": "root", "entity_type": "root", "name": "Root", "data": {"rank": 0}},
+    {"id": "leaf", "entity_type": "leaf", "name": "Leaf", "data": {"rank": 1}}
+  ],
+  "edges": [
+    {"source": "root", "target": "leaf", "relation": "contains", "data": {"weight": 1}}
+  ]
+}

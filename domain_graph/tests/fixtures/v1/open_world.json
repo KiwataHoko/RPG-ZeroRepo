@@ -1,0 +1,14 @@
+{
+  "format": "domain-graph",
+  "version": 1,
+  "name": "open-world",
+  "schema": {"name": "extensible", "entity_types": [], "relations": []},
+  "strict_schema": false,
+  "nodes": [
+    {"id": "m1", "entity_type": "unregistered_entity", "name": "An extension node", "data": {"plugin": "example"}},
+    {"id": "m2", "entity_type": "another_entity", "name": "Another extension node", "data": {}}
+  ],
+  "edges": [
+    {"source": "m1", "target": "m2", "relation": "unregistered_relation", "data": {"extension": true}}
+  ]
+}
