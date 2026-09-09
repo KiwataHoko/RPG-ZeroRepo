@@ -1,6 +1,6 @@
 """Stable public API for the standalone domain graph core."""
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 from .adapter import DomainAdapter
 from .graph import (

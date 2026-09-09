@@ -15,10 +15,10 @@ The stable public surface is exported from `domain_graph`:
 
 ## Install
 
-Install the 0.1.0 wheel from the GitHub Release:
+Install the 0.1.1 wheel from the GitHub Release:
 
 ```bash
-python -m pip install https://github.com/KiwataHoko/RPG-ZeroRepo/releases/download/domain-graph-v0.1.0/domain_graph-0.1.0-py3-none-any.whl
+python -m pip install https://github.com/KiwataHoko/RPG-ZeroRepo/releases/download/domain-graph-v0.1.1/domain_graph-0.1.1-py3-none-any.whl
 ```
 
 For development from this repository:
@@ -28,7 +28,7 @@ python -m pip install -e ./domain_graph
 ```
 
 The distribution name is `domain-graph`; the import package remains
-`domain_graph`. Version `0.1.0` has no runtime dependencies.
+`domain_graph`. Version `0.1.1` has no runtime dependencies.
 
 Release artifacts include both a wheel and source distribution plus SHA-256
 checksums. The release workflow verifies the package metadata, runs the core

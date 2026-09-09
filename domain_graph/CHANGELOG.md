@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.1 - 2026-09-09
 
 - Document the v1 compatibility policy: v1 payloads and public imports remain
   backward compatible within the `0.1.x` release line; readers reject
