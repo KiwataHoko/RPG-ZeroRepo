@@ -30,7 +30,7 @@ EXPECTED_PUBLIC_API = {
 
 
 def test_distribution_and_public_versions_match_release():
-    assert importlib.metadata.version("domain-graph") == __version__ == "0.1.0"
+    assert importlib.metadata.version("domain-graph") == __version__ == "0.1.1"
 
 
 def test_initial_public_api_remains_available():

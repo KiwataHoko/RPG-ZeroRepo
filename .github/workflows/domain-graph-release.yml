@@ -84,6 +84,8 @@ jobs:
           PY
 
       - name: Verify clean source distribution install
+        env:
+          EXPECTED_VERSION: ${{ steps.release.outputs.version }}
         shell: bash
         run: |
           set -euo pipefail
@@ -93,10 +95,12 @@ jobs:
           cd /tmp
           /tmp/domain-graph-sdist/bin/python - <<'PY'
           import importlib.metadata
+          import os
 
           import domain_graph
 
-          assert importlib.metadata.version("domain-graph") == domain_graph.__version__ == "0.1.0"
+          expected_version = os.environ["EXPECTED_VERSION"]
+          assert importlib.metadata.version("domain-graph") == domain_graph.__version__ == expected_version
           assert "CoderMind" not in domain_graph.__file__
           PY
 
