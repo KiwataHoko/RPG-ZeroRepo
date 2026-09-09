@@ -1,0 +1,251 @@
+{
+  "name": "legacy-service",
+  "nodes": [
+    {
+      "id": "repo:legacy-service",
+      "entity_type": "repo",
+      "name": "legacy-service",
+      "data": {
+        "path": ".",
+        "language": "python",
+        "revision": "2024-11-07",
+        "description": "订单同步服务"
+      }
+    },
+    {
+      "id": "dir:src",
+      "entity_type": "directory",
+      "name": "src",
+      "data": {
+        "path": "src",
+        "children_count": 1
+      }
+    },
+    {
+      "id": "dir:src/core",
+      "entity_type": "directory",
+      "name": "core",
+      "data": {
+        "path": "src/core",
+        "package": "legacy_service.core"
+      }
+    },
+    {
+      "id": "file:api",
+      "entity_type": "file",
+      "name": "api.py",
+      "data": {
+        "path": "src/core/api.py",
+        "language": "python",
+        "sha256": "api-fixture-sha",
+        "line_count": 84
+      }
+    },
+    {
+      "id": "file:models",
+      "entity_type": "file",
+      "name": "models.py",
+      "data": {
+        "path": "src/core/models.py",
+        "language": "python",
+        "sha256": "models-fixture-sha",
+        "line_count": 51
+      }
+    },
+    {
+      "id": "class:service",
+      "entity_type": "class",
+      "name": "OrderService",
+      "data": {
+        "path": "src/core/api.py::OrderService",
+        "line_start": 18,
+        "line_end": 63,
+        "bases": ["Repository"]
+      }
+    },
+    {
+      "id": "method:service.list",
+      "entity_type": "method",
+      "name": "list_orders",
+      "data": {
+        "path": "src/core/api.py::OrderService.list_orders",
+        "line_start": 31,
+        "line_end": 44,
+        "signature": "list_orders(self, account_id: str) -> list[Order]"
+      }
+    },
+    {
+      "id": "function:normalize",
+      "entity_type": "function",
+      "name": "normalize_order",
+      "data": {
+        "path": "src/core/api.py::normalize_order",
+        "line_start": 67,
+        "line_end": 78,
+        "signature": "normalize_order(raw: dict) -> Order"
+      }
+    },
+    {
+      "id": "interface:repository",
+      "entity_type": "interface",
+      "name": "Repository",
+      "data": {
+        "path": "src/core/models.py::Repository",
+        "line_start": 8,
+        "line_end": 21,
+        "protocol": "storage boundary"
+      }
+    },
+    {
+      "id": "data:service-config",
+      "entity_type": "data",
+      "name": "SERVICE_CONFIG",
+      "data": {
+        "path": "src/core/models.py::SERVICE_CONFIG",
+        "description": "服务配置",
+        "value_shape": {
+          "timeout_seconds": 3,
+          "region": "ap-east-1"
+        }
+      }
+    },
+    {
+      "id": "data:model-schema",
+      "entity_type": "data",
+      "name": "OrderSchema",
+      "data": {
+        "path": "src/core/models.py::OrderSchema",
+        "fields": ["id", "account_id", "total"],
+        "nullable": false
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "repo:legacy-service",
+      "target": "dir:src",
+      "relation": "contains",
+      "data": {
+        "path_segment": "src"
+      }
+    },
+    {
+      "source": "dir:src",
+      "target": "dir:src/core",
+      "relation": "contains",
+      "data": {
+        "path_segment": "core"
+      }
+    },
+    {
+      "source": "dir:src/core",
+      "target": "file:api",
+      "relation": "contains",
+      "data": {
+        "path": "src/core/api.py"
+      }
+    },
+    {
+      "source": "dir:src/core",
+      "target": "file:models",
+      "relation": "contains",
+      "data": {
+        "path": "src/core/models.py"
+      }
+    },
+    {
+      "source": "file:api",
+      "target": "class:service",
+      "relation": "contains",
+      "data": {
+        "line_start": 18,
+        "line_end": 63
+      }
+    },
+    {
+      "source": "class:service",
+      "target": "method:service.list",
+      "relation": "composes",
+      "data": {
+        "member_kind": "method"
+      }
+    },
+    {
+      "source": "file:api",
+      "target": "function:normalize",
+      "relation": "contains",
+      "data": {
+        "line_start": 67,
+        "line_end": 78
+      }
+    },
+    {
+      "source": "file:models",
+      "target": "interface:repository",
+      "relation": "contains",
+      "data": {
+        "declaration_kind": "protocol"
+      }
+    },
+    {
+      "source": "file:models",
+      "target": "data:service-config",
+      "relation": "contains",
+      "data": {
+        "symbol_kind": "constant"
+      }
+    },
+    {
+      "source": "file:models",
+      "target": "data:model-schema",
+      "relation": "contains",
+      "data": {
+        "symbol_kind": "schema"
+      }
+    },
+    {
+      "source": "method:service.list",
+      "target": "function:normalize",
+      "relation": "invokes",
+      "data": {
+        "line": 39,
+        "call_count": 1
+      }
+    },
+    {
+      "source": "file:api",
+      "target": "file:models",
+      "relation": "imports",
+      "data": {
+        "module": "legacy_service.core.models",
+        "line": 5
+      }
+    },
+    {
+      "source": "class:service",
+      "target": "interface:repository",
+      "relation": "inherits",
+      "data": {
+        "base_name": "Repository"
+      }
+    },
+    {
+      "source": "class:service",
+      "target": "data:service-config",
+      "relation": "references",
+      "data": {
+        "symbol": "SERVICE_CONFIG",
+        "line": 24
+      }
+    },
+    {
+      "source": "function:normalize",
+      "target": "data:model-schema",
+      "relation": "references",
+      "data": {
+        "symbol": "OrderSchema",
+        "line": 72
+      }
+    }
+  ]
+}

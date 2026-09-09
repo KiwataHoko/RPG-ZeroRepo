@@ -35,6 +35,19 @@ checksums. The release workflow verifies the package metadata, runs the core
 and adapter tests, and installs both artifacts in clean virtual environments
 before publishing the GitHub Release.
 
+## Compatibility
+
+The current JSON wire format is `format="domain-graph"`, `version=1`. The
+`0.1.x` release line promises semantic backward compatibility for v1 payloads
+and the public package surface; it does not promise byte-for-byte equality of
+serialized JSON. Node and edge `data` must be JSON-native, and real adapters
+must preserve domain semantics through validation and serialization
+round-trips.
+
+See the [compatibility policy](./COMPATIBILITY.md) for the v1 contract, golden
+fixture rules, forward-compatibility limits, adapter acceptance criteria, and
+Python/CI expectations.
+
 Schemas are open-world by default. Undeclared string entity types and
 relations are accepted and reported by `graph.validate()`. Use
 `strict_schema=True` to reject undeclared symbols at mutation time.

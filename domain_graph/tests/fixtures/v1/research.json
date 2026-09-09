@@ -1,0 +1,30 @@
+{
+  "format": "domain-graph",
+  "version": 1,
+  "name": "paper-42",
+  "schema": {
+    "name": "research",
+    "entity_types": ["question", "claim", "evidence", "source"],
+    "relations": [
+      {"name": "contains", "hierarchy": true},
+      {"name": "supports", "hierarchy": false},
+      {"name": "contradicts", "hierarchy": false},
+      {"name": "derived_from", "hierarchy": false}
+    ]
+  },
+  "strict_schema": true,
+  "nodes": [
+    {"id": "q1", "entity_type": "question", "name": "What causes X?", "data": {"status": "open"}},
+    {"id": "c1", "entity_type": "claim", "name": "Mechanism A causes X", "data": {"confidence": 0.91}},
+    {"id": "c2", "entity_type": "claim", "name": "Mechanism B causes X", "data": {"confidence": 0.34}},
+    {"id": "e1", "entity_type": "evidence", "name": "Experiment 1", "data": {"sample_size": 120}},
+    {"id": "s1", "entity_type": "source", "name": "Paper 1", "data": {"doi": "10.1000/example"}}
+  ],
+  "edges": [
+    {"source": "q1", "target": "c1", "relation": "contains", "data": {}},
+    {"source": "q1", "target": "c2", "relation": "contains", "data": {}},
+    {"source": "c1", "target": "e1", "relation": "contains", "data": {"role": "primary"}},
+    {"source": "e1", "target": "c1", "relation": "supports", "data": {"strength": "strong"}},
+    {"source": "e1", "target": "s1", "relation": "derived_from", "data": {"page": 4}}
+  ]
+}

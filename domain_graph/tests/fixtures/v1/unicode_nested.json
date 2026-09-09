@@ -1,0 +1,29 @@
+{
+  "format": "domain-graph",
+  "version": 1,
+  "name": "多语言研究",
+  "schema": {
+    "name": "国际化",
+    "entity_types": ["问题", "答案"],
+    "relations": [
+      {"name": "包含", "hierarchy": true},
+      {"name": "支持", "hierarchy": false}
+    ]
+  },
+  "strict_schema": true,
+  "nodes": [
+    {
+      "id": "节点-一",
+      "entity_type": "问题",
+      "name": "研究问题：为什么？",
+      "data": {
+        "labels": ["中文", "日本語", "emoji 🚀"],
+        "metadata": {"作者": "李雷", "scores": [0, 1, 1.5]}
+      }
+    },
+    {"id": "节点-二", "entity_type": "答案", "name": "回答：因为系统性因素。", "data": {"quote": "éclair — naïve café"}}
+  ],
+  "edges": [
+    {"source": "节点-一", "target": "节点-二", "relation": "包含", "data": {"引用": {"页码": 12, "段落": "第二段"}}}
+  ]
+}
