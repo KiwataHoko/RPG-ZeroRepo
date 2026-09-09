@@ -51,6 +51,8 @@ def test_realistic_fixture_loads_under_strict_code_schema():
     assert graph.name == payload["name"]
     assert len(graph.nodes) == len(payload["nodes"])
     assert len(graph.edges) == len(payload["edges"])
+    assert [node.to_dict() for node in graph.nodes.values()] == payload["nodes"]
+    assert [edge.to_dict() for edge in graph.edges] == payload["edges"]
     assert set(node.entity_type for node in graph.nodes.values()) == {
         "repo",
         "directory",
