@@ -1,8 +1,10 @@
 """Standalone domain graph implementation."""
 
 from collections import deque
+from collections.abc import Mapping as MappingABC
 from dataclasses import dataclass
 import json
+import math
 from types import MappingProxyType
 from typing import Any, Dict, Mapping, Optional, Tuple
 
@@ -259,7 +261,9 @@ class DomainGraph:
 
     def to_json(self, *, indent: Optional[int] = None) -> str:
         """Serialize the graph to the versioned JSON wire format."""
-        return json.dumps(self.to_dict(), ensure_ascii=False, indent=indent)
+        payload = self.to_dict()
+        _validate_json_payload(payload)
+        return json.dumps(payload, ensure_ascii=False, indent=indent)
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "DomainGraph":
@@ -352,3 +356,19 @@ class DomainGraph:
                     seen.add(neighbor.id)
                     queue.append(neighbor.id)
         return False
+
+
+def _validate_json_payload(value: Any) -> None:
+    """Reject values that json.dumps would encode lossy or non-standardly."""
+    if isinstance(value, MappingABC):
+        for key, item in value.items():
+            if not isinstance(key, str):
+                raise TypeError("JSON mapping keys must be strings")
+            _validate_json_payload(item)
+    elif isinstance(value, tuple):
+        raise TypeError("JSON tuples are not supported")
+    elif isinstance(value, list):
+        for item in value:
+            _validate_json_payload(item)
+    elif isinstance(value, float) and not math.isfinite(value):
+        raise ValueError("JSON floats must be finite")

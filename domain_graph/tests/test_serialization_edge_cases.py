@@ -159,3 +159,29 @@ def test_repeated_semantic_round_trips_are_stable():
         current = DomainGraph.from_json(current.to_json())
         assert current.to_dict() == expected
         assert json.loads(current.to_json()) == expected
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
+def test_to_json_rejects_non_finite_floats_in_nested_data(value):
+    graph = DomainGraph("finite", _schema())
+    graph.add_node("parent", "父节点", data={"nested": [{"value": value}]})
+
+    with pytest.raises(ValueError, match="finite"):
+        graph.to_json()
+
+
+@pytest.mark.parametrize("key", [1, 1.5, None, True, ("tuple",)])
+def test_to_json_rejects_non_string_mapping_keys_before_coercion(key):
+    graph = DomainGraph("string-keys", _schema())
+    graph.add_node("parent", "父节点", data={"nested": {key: "value"}})
+
+    with pytest.raises(TypeError, match="string"):
+        graph.to_json()
+
+
+def test_to_json_rejects_nested_tuples_without_coercion():
+    graph = DomainGraph("tuple", _schema())
+    graph.add_node("parent", "父节点", data={"nested": [{"value": ("a", "b")}]})
+
+    with pytest.raises(TypeError, match="tuple"):
+        graph.to_json()
