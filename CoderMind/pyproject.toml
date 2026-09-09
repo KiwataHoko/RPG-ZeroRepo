@@ -33,7 +33,8 @@ dependencies = [
     "tqdm",
     "openai>=1.0.0",
     "anthropic>=0.20.0",
-    "mcp>=1.0.0",
+    # scripts/mcp_server.py uses the FastMCP API from MCP Python SDK 1.x.
+    "mcp>=1.0.0,<2",
     "pyyaml>=6.0"
 ]
 
