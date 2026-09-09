@@ -16,6 +16,8 @@
 
 🔥 **[CoderMind](CoderMind/) 现已支持 Claude Code、GitHub Copilot、Codex App/CLI/IDE、Pi 和 oh-my-pi（OMP）。**
 
+🧩 **[Domain Graph 0.1.1](https://github.com/KiwataHoko/RPG-ZeroRepo/releases/tag/domain-graph-v0.1.1) 已作为独立、领域无关的 Python 包发布。**
+
 编码智能体执行长周期仓库任务时容易丢失仓库级上下文：需求发生漂移、架构决策消失、编辑遗漏隐藏依赖。
 
 CoderMind 为智能体提供**持久化 RPG 工作区**。智能体通过共享图完成仓库规划、生成、理解和更新，不必只依赖临时对话历史与文件搜索。
@@ -30,6 +32,9 @@ CoderMind 为智能体提供**持久化 RPG 工作区**。智能体通过共享�
 
 ## 文档
 
+- [Domain Graph 指南](domain_graph/README.md) — 安装、公共 API、Schema、查询和适配器
+- [Domain Graph 兼容性策略](domain_graph/COMPATIBILITY.md) — v1 格式契约、黄金样本、迁移和适配器验收
+- [Domain Graph 更新日志](domain_graph/CHANGELOG.md)
 - [CoderMind 完整指南](CoderMind/README.zh-CN.md) — 安装、Agent Skills、命令和 MCP 工具
 - [宿主驱动的智能体](CoderMind/docs/host-driven-agents.md) — Codex/Pi/OMP 的无嵌套智能体执行方式
 - [CoderMind 命令参考](CoderMind/docs/commands.md)
@@ -150,6 +155,40 @@ CoderMind 安装的 post-commit hook 可以在提交后增量更新 RPG，使图
 ![本仓库的 RPG 可视化](docs/cmind_visualized_graph.png)
 
 完整用法见 [CoderMind 中文指南](CoderMind/README.zh-CN.md)。
+
+---
+
+## Domain Graph 核心库
+
+[`domain_graph`](domain_graph/) 是从 CoderMind 中抽取的独立图基础库。它提供
+领域无关的节点和边、由 Schema 定义的词汇与层级语义、图遍历、校验以及带
+版本号的 JSON 格式，不依赖 CoderMind 或代码领域专用枚举。
+
+直接从 GitHub 安装当前版本：
+
+```bash
+python -m pip install \
+  https://github.com/KiwataHoko/RPG-ZeroRepo/releases/download/domain-graph-v0.1.1/domain_graph-0.1.1-py3-none-any.whl
+```
+
+```python
+from domain_graph import DomainGraph, DomainSchema, RelationSpec
+
+schema = DomainSchema(
+    "research",
+    entity_types=("claim", "evidence"),
+    relations=(RelationSpec("supports"),),
+)
+graph = DomainGraph("paper", schema, strict_schema=True)
+graph.add_node("claim-1", "claim")
+graph.add_node("evidence-1", "evidence")
+graph.add_edge("evidence-1", "claim-1", "supports")
+```
+
+0.1.1 支持 Python 3.10 及以上版本，无运行时依赖，并保证 0.1.x
+版本线内对 v1 JSON 格式的向后兼容。详见[包使用指南](domain_graph/README.md)、
+[兼容性策略](domain_graph/COMPATIBILITY.md)和
+[0.1.1 Release](https://github.com/KiwataHoko/RPG-ZeroRepo/releases/tag/domain-graph-v0.1.1)。
 
 ---
 

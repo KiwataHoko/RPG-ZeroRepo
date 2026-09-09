@@ -118,6 +118,15 @@ As you run `/cmind.*` commands, `~/.cmind/workspaces/<workspace-id>/data/` is pr
 
 `rpg.json` is the central graph artifact used by the forward pipeline, reverse encoder, MCP tools, incremental update hooks, and `/cmind.rpg_edit`.
 
+CoderMind's code-domain compatibility layer is built on the standalone
+[`domain_graph`](../../domain_graph/) core. `CodeDomainAdapter` declares the
+code vocabulary (`repo`, `file`, `class`, `function`, and related symbols) and
+which relations carry hierarchy semantics, while the core remains reusable by
+non-code domains. The standalone package has its own
+[compatibility policy](../../domain_graph/COMPATIBILITY.md) for the versioned
+JSON wire format; CoderMind retains its richer `rpg.json` application contract
+on top of that core.
+
 It can be created in either direction:
 
 1. **Forward pipeline:** `/cmind.build_skeleton` creates `rpg.json` from `feature_tree.json`.
