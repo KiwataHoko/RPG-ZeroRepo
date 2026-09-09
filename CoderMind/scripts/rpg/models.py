@@ -22,7 +22,9 @@ from typing import (
     Any, ClassVar, TYPE_CHECKING
 )
 from collections import defaultdict, deque
-from enum import Enum
+
+from .domain import DomainSchema, symbol_value
+from .code_domain import CODE_DOMAIN_SCHEMA, EdgeType, NodeType
 
 from .path_format import (
     function_node_path,
@@ -45,56 +47,10 @@ __all__ = [
 ]
 
 
-class NodeType(str, Enum):
-    """Types of nodes in the RPG."""
-    DIRECTORY = "directory"
-    FILE = "file"
-    CLASS = "class"
-    FUNCTION = "function"
-    METHOD = "method"
-    COMPONENT = "component"
-    DATA = "data"
-    INTERFACE = "interface"
-    VARIABLE = "variable"
-    IMPORT = "import"
-    REPO = "repo"
-    MODULE = "module"
-    PACKAGE = "package"
-
-    def __str__(self):
-        return self.value
-
-
-class EdgeType(str, Enum):
-    """Types of edges in the RPG."""
-    COMPOSES = "composes"       # functional composition (semantically equivalent to CONTAINS)
-    CONTAINS = "contains"       # structure containment
-    INHERITS = "inherits"       # class inheritance
-    INVOKES = "invokes"         # function/method calls
-    REFERENCES = "references"   # data contracts
-    SAME_UNIT = "same_unit"     # multiple features share same implementation unit
-    IMPORTS = "imports"         # module import relationships
-    CONTAINS_BASE_CLASS = "contains_base_class"  # contains as base class
-
-    def __str__(self):
-        return self.value
-
-    @classmethod
-    def is_hierarchy(cls, relation) -> bool:
-        """Check if the given relation represents a hierarchical (parent-child) edge.
-
-        Hierarchy edges are used for tree structure (COMPOSES, CONTAINS,
-        CONTAINS_BASE_CLASS). Non-hierarchy edges (INVOKES, IMPORTS, etc.)
-        are stored separately.
-        """
-        relation_str = str(relation).lower()
-        return relation_str in ("composes", "contains", "contains_base_class")
-
-
 @dataclass
 class NodeMetaData:
     """Metadata for RPG nodes."""
-    type_name: Optional[NodeType] = None
+    type_name: Optional[Union[NodeType, str]] = None
     path: Union[str, List[str], None] = None
     description: str = ""
     content: str = ""
@@ -107,7 +63,7 @@ class NodeMetaData:
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            "type_name": self.type_name.value if self.type_name else None,
+            "type_name": symbol_value(self.type_name),
             "path": self.path,
             "content": self.content,
             "description": self.description,
@@ -120,7 +76,7 @@ class NodeMetaData:
         if not d:
             return None
         tn_raw = d.get("type_name")
-        type_name = NodeType(tn_raw) if tn_raw in {m.value for m in NodeType} else None
+        type_name = NodeType(tn_raw) if tn_raw in {m.value for m in NodeType} else tn_raw
         return cls(
             type_name=type_name,
             path=d.get("path"),
@@ -402,14 +358,14 @@ class Edge:
     """RPG Edge representing relationships between nodes."""
     src: str
     dst: str
-    relation: EdgeType = EdgeType.CONTAINS
+    relation: Union[EdgeType, str] = EdgeType.CONTAINS
     meta: NodeMetaData = field(default_factory=NodeMetaData)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "src": self.src,
             "dst": self.dst,
-            "relation": self.relation,
+            "relation": symbol_value(self.relation),
             "meta": self.meta.to_dict() if self.meta else None,
         }
 
@@ -434,10 +390,17 @@ class RPG:
     MAX_LEVEL = 6  # Maximum depth level (method level)
     MAX_FEATURE_LEVEL = 5  # Maximum level for feature nodes (feature/classes/functions level)
 
-    def __init__(self, repo_name: str, repo_info: str = "", excluded_files: List[str] = []):
+    def __init__(
+        self,
+        repo_name: str,
+        repo_info: str = "",
+        excluded_files: List[str] = [],
+        domain_schema: Optional[DomainSchema] = None,
+    ):
         self.repo_info = repo_info
         self.excluded_files = excluded_files
         self.repo_name = repo_name
+        self.domain_schema = domain_schema or CODE_DOMAIN_SCHEMA
         self._node_index: Dict[str, Node] = {}  # ID -> Node index for fast lookup
         self.edges: List[Edge] = []  # Non-containment edges only
 
@@ -799,7 +762,7 @@ class RPG:
             return
 
         # Determine if this is a containment relationship
-        is_containment = EdgeType.is_hierarchy(relation)
+        is_containment = self.domain_schema.is_hierarchy(relation)
 
         # For containment edges, update tree structure
         if is_containment:
@@ -1057,13 +1020,12 @@ class RPG:
         Returns:
             List of matching Node objects.
         """
-        if isinstance(type_name, NodeType):
-            type_name = type_name.value
+        type_name = symbol_value(type_name)
         return [
             node for node in self._node_index.values()
             if node.meta
             and node.meta.type_name is not None
-            and node.meta.type_name.value == type_name
+            and symbol_value(node.meta.type_name) == type_name
         ]
 
     def get_node_by_feature_path(self, feature_path: str, sep: str = "/") -> Optional[Node]:
@@ -2609,7 +2571,7 @@ class RPG:
         edge_index: Dict[tuple, int] = {}  # (src, dst, relation) -> index
         non_containment_edges = []
         for e in self.edges:
-            if e.relation != EdgeType.CONTAINS and e.relation != "contains":
+            if not self.domain_schema.is_hierarchy(e.relation):
                 edge_dict = e.to_dict()
                 non_containment_edges.append(edge_dict)
                 rel_str = e.relation.value if hasattr(e.relation, "value") else str(e.relation)
@@ -2647,6 +2609,11 @@ class RPG:
             # rely on its presence; omit ``git`` when unknown.
             "meta": {
                 **({"git": self.git_meta} if self.git_meta else {}),
+                **(
+                    {"domain_schema": self.domain_schema.to_dict()}
+                    if self.domain_schema != CODE_DOMAIN_SCHEMA
+                    else {}
+                ),
             },
             **({"dep_graph": self.dep_graph.to_dict(dep_to_rpg_map=self._dep_to_rpg_map)}
                if include_dep_graph and self.dep_graph is not None else {}),
@@ -2690,13 +2657,28 @@ class RPG:
             return
         rpg.git_meta = {k: git.get(k) for k in RPG._GIT_META_KEYS}
 
+    @staticmethod
+    def _domain_schema_from_data(data: Dict[str, Any]) -> DomainSchema:
+        meta = data.get("meta")
+        if not isinstance(meta, dict):
+            return CODE_DOMAIN_SCHEMA
+        schema_data = meta.get("domain_schema")
+        if not isinstance(schema_data, dict):
+            return CODE_DOMAIN_SCHEMA
+        return DomainSchema.from_dict(schema_data)
+
     @classmethod
     def _from_tree_dict(cls, data: Dict[str, Any]) -> "RPG":
         """Restore from CoderMind nested tree format (``root`` + ``children``)."""
         repo_name = data.get("repo_name", "repo")
         repo_info = data.get("repo_info", "")
         excluded_files = data.get("excluded_files", [])
-        rpg = cls(repo_name=repo_name, repo_info=repo_info, excluded_files=excluded_files)
+        rpg = cls(
+            repo_name=repo_name,
+            repo_info=repo_info,
+            excluded_files=excluded_files,
+            domain_schema=cls._domain_schema_from_data(data),
+        )
 
         # Clear default content
         rpg._node_index.clear()
@@ -2715,7 +2697,7 @@ class RPG:
         # Skip contains edges — tree structure is already loaded from children.
         for ed in data.get("edges", []):
             edge = Edge.from_dict(ed)
-            if EdgeType.is_hierarchy(edge.relation):
+            if rpg.domain_schema.is_hierarchy(edge.relation):
                 continue
             if edge.src not in rpg._node_index or edge.dst not in rpg._node_index:
                 continue
@@ -2754,7 +2736,12 @@ class RPG:
         repo_name = data.get("repo_name", "repo")
         repo_info = data.get("repo_info", "")
         excluded_files = data.get("excluded_files", [])
-        rpg = cls(repo_name=repo_name, repo_info=repo_info, excluded_files=excluded_files)
+        rpg = cls(
+            repo_name=repo_name,
+            repo_info=repo_info,
+            excluded_files=excluded_files,
+            domain_schema=cls._domain_schema_from_data(data),
+        )
 
         # Clear default content
         rpg._node_index.clear()
