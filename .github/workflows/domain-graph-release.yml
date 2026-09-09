@@ -1,0 +1,157 @@
+name: Domain Graph Release
+
+on:
+  push:
+    branches:
+      - "domain-graph/release-*"
+    tags:
+      - "domain-graph-v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Resolve and validate release version
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          package_version="$(python - <<'PY'
+          import pathlib
+          import tomllib
+
+          data = tomllib.loads(pathlib.Path("domain_graph/pyproject.toml").read_text())
+          print(data["project"]["version"])
+          PY
+          )"
+          release_tag="domain-graph-v${package_version}"
+          if [[ "$GITHUB_REF_TYPE" == "tag" && "$GITHUB_REF_NAME" != "$release_tag" ]]; then
+            echo "tag $GITHUB_REF_NAME does not match package version $package_version" >&2
+            exit 1
+          fi
+          if [[ "$GITHUB_REF_TYPE" == "branch" && "$GITHUB_REF_NAME" != "domain-graph/release-${package_version}" ]]; then
+            echo "release branch $GITHUB_REF_NAME does not match package version $package_version" >&2
+            exit 1
+          fi
+          echo "version=$package_version" >> "$GITHUB_OUTPUT"
+          echo "tag=$release_tag" >> "$GITHUB_OUTPUT"
+
+      - name: Install release tooling
+        run: python -m pip install --upgrade pip build pytest twine
+
+      - name: Run standalone tests
+        run: |
+          python -m pip install -e ./domain_graph
+          python -m pytest tests/test_domain_graph_core.py domain_graph/tests
+
+      - name: Build distributions
+        run: python -m build ./domain_graph --outdir dist
+
+      - name: Validate distribution metadata
+        run: python -m twine check dist/*
+
+      - name: Verify clean wheel install
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m venv /tmp/domain-graph-wheel
+          /tmp/domain-graph-wheel/bin/python -m pip install --upgrade pip
+          /tmp/domain-graph-wheel/bin/python -m pip install dist/*.whl
+          cd /tmp
+          /tmp/domain-graph-wheel/bin/python - <<'PY'
+          import importlib.metadata
+
+          import domain_graph
+          from domain_graph.adapters import ResearchDomainAdapter
+
+          assert importlib.metadata.version("domain-graph") == domain_graph.__version__
+          graph = ResearchDomainAdapter().create_graph("release", strict_schema=True)
+          graph.add_node("q", "question")
+          graph.add_node("c", "claim")
+          graph.add_edge("q", "c", "contains")
+          assert [node.id for node in graph.children("q")] == ["c"]
+          PY
+
+      - name: Verify clean source distribution install
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m venv /tmp/domain-graph-sdist
+          /tmp/domain-graph-sdist/bin/python -m pip install --upgrade pip
+          /tmp/domain-graph-sdist/bin/python -m pip install dist/*.tar.gz
+          cd /tmp
+          /tmp/domain-graph-sdist/bin/python - <<'PY'
+          import importlib.metadata
+
+          import domain_graph
+
+          assert importlib.metadata.version("domain-graph") == domain_graph.__version__ == "0.1.0"
+          assert "CoderMind" not in domain_graph.__file__
+          PY
+
+      - name: Create checksums
+        run: sha256sum dist/* > dist/SHA256SUMS
+
+      - name: Extract package release notes
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${{ steps.release.outputs.version }}"
+          python - "$version" <<'PY' > /tmp/domain-graph-release-notes.md
+          from pathlib import Path
+          import sys
+
+          version = sys.argv[1]
+          lines = Path("domain_graph/CHANGELOG.md").read_text(encoding="utf-8").splitlines()
+          heading = f"## {version}"
+          start = next(i for i, line in enumerate(lines) if line.startswith(heading))
+          end = next(
+              (i for i in range(start + 1, len(lines)) if lines[i].startswith("## ")),
+              len(lines),
+          )
+          body = "\n".join(lines[start + 1:end]).strip()
+          if not body:
+              raise SystemExit(f"no changelog notes found for {version}")
+          print(body)
+          PY
+
+      - name: Ensure release tag exists
+        if: github.ref_type == 'branch'
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_tag="${{ steps.release.outputs.tag }}"
+          if ! git ls-remote --exit-code --tags origin "refs/tags/$release_tag" >/dev/null 2>&1; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -a "$release_tag" -m "domain-graph ${{ steps.release.outputs.version }}"
+            git push origin "refs/tags/$release_tag"
+          fi
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_tag="${{ steps.release.outputs.tag }}"
+          if gh release view "$release_tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "release $release_tag already exists"
+            exit 0
+          fi
+          gh release create "$release_tag" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "domain-graph ${{ steps.release.outputs.version }}" \
+            --notes-file /tmp/domain-graph-release-notes.md \
+            --verify-tag

@@ -29,7 +29,7 @@ def _research_schema() -> DomainSchema:
 
 def test_core_has_no_coder_mind_or_rpg_imports():
     package_root = Path(__file__).resolve().parents[1] / "domain_graph"
-    for path in package_root.glob("*.py"):
+    for path in package_root.rglob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"))
         imported = []
         for node in ast.walk(tree):
