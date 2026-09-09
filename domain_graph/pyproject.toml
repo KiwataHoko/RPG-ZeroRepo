@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "domain-graph"
+version = "0.1.0"
+description = "Domain-neutral graph core with schema-defined hierarchy semantics"
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    { name = "ZeroRepo Contributors" },
+]
+keywords = ["graph", "domain-modeling", "schema", "knowledge-graph"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/KiwataHoko/RPG-ZeroRepo/tree/domain-graph-v0.1.0/domain_graph"
+Repository = "https://github.com/KiwataHoko/RPG-ZeroRepo"
+Issues = "https://github.com/KiwataHoko/RPG-ZeroRepo/issues"
+Changelog = "https://github.com/KiwataHoko/RPG-ZeroRepo/blob/domain-graph-v0.1.0/domain_graph/CHANGELOG.md"
+
+[tool.setuptools]
+packages = ["domain_graph", "domain_graph.adapters"]
+
+[tool.setuptools.package-dir]
+domain_graph = "."
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

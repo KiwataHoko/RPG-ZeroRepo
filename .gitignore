@@ -433,3 +433,7 @@ workspace/
 .vscode/tasks.json
 .mcp.json
 .claude/commands/
+
+.agents/skills/cmind-*/
+.cmind/host-runs/
+.codex/
