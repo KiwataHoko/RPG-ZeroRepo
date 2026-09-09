@@ -263,6 +263,8 @@ class DomainGraph:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "DomainGraph":
+        if not isinstance(data, dict):
+            raise ValueError("domain graph payload must contain an object")
         graph_format = data.get("format", cls.FORMAT)
         if graph_format != cls.FORMAT:
             raise ValueError(f"unsupported graph format: {graph_format!r}")
