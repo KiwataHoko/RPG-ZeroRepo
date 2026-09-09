@@ -27,7 +27,7 @@ def _research_schema() -> DomainSchema:
 
 
 def test_custom_domain_uses_schema_for_hierarchy_and_arbitrary_relations():
-    graph = DomainGraph("research", domain_schema=_research_schema())
+    graph = DomainGraph("research", _research_schema())
     claim = Node("claim-1", name="Claim", meta=NodeMetaData(type_name="claim"))
     evidence = Node("evidence-1", name="Evidence", meta=NodeMetaData(type_name="evidence"))
     graph.add_node(claim)

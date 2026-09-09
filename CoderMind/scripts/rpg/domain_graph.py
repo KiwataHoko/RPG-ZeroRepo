@@ -13,14 +13,13 @@ class DomainGraph(RPG):
     def __init__(
         self,
         repo_name: str,
-        repo_info: str = "",
-        excluded_files: List[str] = [],
         domain_schema: Optional[DomainSchema] = None,
+        repo_info: str = "",
+        excluded_files: Optional[List[str]] = None,
     ):
         super().__init__(
             repo_name=repo_name,
             repo_info=repo_info,
-            excluded_files=excluded_files,
+            excluded_files=excluded_files or [],
             domain_schema=domain_schema or CODE_DOMAIN_SCHEMA,
         )
-
