@@ -68,4 +68,3 @@ class CodeDomainAdapter(DomainAdapter):
 
     def __init__(self):
         super().__init__(CODE_DOMAIN_SCHEMA)
-
