@@ -15,8 +15,12 @@ from .models import (
     infer_type_name_from_path,
     MAX_LEVEL, MAX_FEATURE_LEVEL,
 )
-from .domain import DomainAdapter, DomainSchema, RelationSpec
-from .domain_graph import DomainGraph
+from .domain import DomainAdapter, DomainSchema, RelationSpec, SchemaViolation
+from .domain_graph import (
+    DomainEdge, DomainGraph, DomainGraphError, DomainNode,
+    DuplicateNodeError, HierarchyCycleError, NodeNotFoundError,
+    ValidationIssue,
+)
 from .code_domain import CODE_DOMAIN_SCHEMA, CodeDomainAdapter
 from .builder import (
     create_initial_rpg,
@@ -48,6 +52,9 @@ __all__ = [
     "RPG", "Node", "Edge",
     "NodeMetaData", "NodeType", "EdgeType",
     "DomainGraph", "DomainSchema", "DomainAdapter", "RelationSpec",
+    "DomainNode", "DomainEdge", "ValidationIssue", "SchemaViolation",
+    "DomainGraphError", "DuplicateNodeError", "HierarchyCycleError",
+    "NodeNotFoundError",
     "CODE_DOMAIN_SCHEMA", "CodeDomainAdapter",
     "strip_uuid8", "uuid8", "infer_type_name_from_path",
     "MAX_LEVEL", "MAX_FEATURE_LEVEL",
