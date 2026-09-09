@@ -99,3 +99,46 @@ graph.add_edge("q1", "c1", "contains")
 The adapter is intentionally outside the core root API. New domains can add
 their own adapters without modifying the graph implementation or extending a
 central enum.
+
+## Content adapter
+
+> Available on the development branch and scheduled for the next release.
+
+`ContentDomainAdapter` models reusable, source-traceable content independently
+of its final presentation format. Its vocabulary covers documents, sections,
+content blocks, assets, citations, and references to nodes in source graphs.
+Only `contains` is hierarchical; ordering, provenance, explanation, summary,
+and variant relationships remain ordinary directed edges.
+
+```python
+from domain_graph.adapters import ContentDomainAdapter
+
+adapter = ContentDomainAdapter()
+graph = adapter.create_document("reading", "doc:reading", title="A short guide")
+adapter.add_section(graph, "section:intro", "doc:reading", title="Introduction")
+adapter.add_block(
+    graph,
+    "block:claim",
+    "section:intro",
+    kind="paragraph",
+    text="A claim grounded in the research graph.",
+)
+adapter.add_source_ref(
+    graph,
+    "source:claim-7",
+    source_graph="research:project-alpha",
+    source_node_id="claim-7",
+)
+graph.add_edge("block:claim", "source:claim-7", "derived_from")
+
+assert adapter.validate_content(graph) == ()
+```
+
+Renderers and research-to-content transformations are intentionally separate
+from the adapter. This prevents output concerns such as Markdown syntax, PDF
+layout, or slide styling from entering the portable content graph.
+
+`validate_content()` combines the core schema check with content-specific
+invariants: structural nodes must belong to a document, source references must
+identify an external graph and node, and provenance relations must target a
+`source_ref`. Each citation must have exactly one outgoing `cites` relation.

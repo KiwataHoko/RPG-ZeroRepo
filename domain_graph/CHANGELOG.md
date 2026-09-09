@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Add `ContentDomainAdapter` for format-neutral documents, sections, content
+  blocks, assets, citations, and cross-graph source references.
+- Provide focused builders for document structure and citation provenance while
+  keeping research-to-content transformation and rendering outside the adapter.
+
 ## 0.1.1 - 2026-09-09
 
 - Document the v1 compatibility policy: v1 payloads and public imports remain

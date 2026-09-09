@@ -185,6 +185,10 @@ graph.add_node("evidence-1", "evidence")
 graph.add_edge("evidence-1", "claim-1", "supports")
 ```
 
+开发分支新增了格式无关的内容参考适配器。`ContentDomainAdapter` 保留文档、
+章节、内容块和引用到来源研究图节点的联系，并在 Markdown、PDF、幻灯片等
+渲染环节之前提供可移植的内容边界。
+
 0.1.1 支持 Python 3.10 及以上版本，无运行时依赖，并保证 0.1.x
 版本线内对 v1 JSON 格式的向后兼容。详见[包使用指南](domain_graph/README.md)、
 [兼容性策略](domain_graph/COMPATIBILITY.md)和

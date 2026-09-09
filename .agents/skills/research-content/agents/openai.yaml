@@ -1,0 +1,4 @@
+interface:
+  display_name: "Research Content"
+  short_description: "Turn grounded research into reusable content graphs"
+  default_prompt: "Use $research-content to turn this research into a source-traceable article outline."

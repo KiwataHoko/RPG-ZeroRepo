@@ -266,6 +266,7 @@ cmind update
 - [CLI reference](docs/cli-reference.md) — `cmind init`, `cmind update`, `cmind check`, `cmind version`, and all options.
 - [Configuration](docs/configuration.md) — AI assistant setup, MCP registration, hooks, auto-approval, and troubleshooting.
 - [Host-driven agents](docs/host-driven-agents.md) — Codex/Pi/OMP skills, MCP wiring, and the no-nested-agent execution protocol.
+- [Skill architecture](docs/skill-architecture.md) — naming boundaries, generated sources of truth, and skill growth rules.
 - [Project structure](docs/project-structure.md) — files and directories created by CoderMind.
 
 ## Upcoming Features

@@ -112,15 +112,30 @@ def test_install_registers_host_agents_without_nested_cli_commands():
 
 
 @pytest.mark.parametrize(
-    ("agent", "skill_path", "expected_reference"),
+    ("agent", "skill_path", "protocol_path", "expected_reference"),
     [
-        ("codex", Path(".agents/skills/cmind-encode/SKILL.md"), "$cmind-update-rpg"),
-        ("pi", Path(".agents/skills/cmind-encode/SKILL.md"), "/skill:cmind-update-rpg"),
-        ("omp", Path(".omp/skills/cmind-encode/SKILL.md"), "/skill:cmind-update-rpg"),
+        (
+            "codex",
+            Path(".agents/skills/cmind-encode/SKILL.md"),
+            Path(".agents/cmind/host-protocol.md"),
+            "$cmind-update-rpg",
+        ),
+        (
+            "pi",
+            Path(".agents/skills/cmind-encode/SKILL.md"),
+            Path(".agents/cmind/host-protocol.md"),
+            "/skill:cmind-update-rpg",
+        ),
+        (
+            "omp",
+            Path(".omp/skills/cmind-encode/SKILL.md"),
+            Path(".omp/cmind/host-protocol.md"),
+            "/skill:cmind-update-rpg",
+        ),
     ],
 )
 def test_materialises_host_driven_agent_skills(
-    tmp_path: Path, agent, skill_path, expected_reference
+    tmp_path: Path, agent, skill_path, protocol_path, expected_reference
 ):
     core, _ = _fake_core()
     install(core)
@@ -136,9 +151,30 @@ def test_materialises_host_driven_agent_skills(
     assert expected_reference in skill
     assert "$ARGUMENTS" not in skill
     assert "cmind host start example.py --json" in skill
-    assert "cmind host next <run_id>" in skill
-    assert "cmind host reply <run_id> <request_id>" in skill
-    assert "Do not replace this protocol with `codex exec`" in skill
+    assert "../../cmind/host-protocol.md" in skill
+    assert "cmind host next <run_id>" not in skill
+
+    protocol = (project / protocol_path).read_text(encoding="utf-8")
+    assert "cmind host next <run_id>" in protocol
+    assert "cmind host reply <run_id> <request_id>" in protocol
+    assert "Do not replace this protocol with `codex exec`" in protocol
+
+
+def test_host_protocol_generated_once_for_multiple_skills(tmp_path: Path):
+    core, _ = _fake_core()
+    install(core)
+    commands = tmp_path / "commands"
+    _write_command_template(commands, "encode")
+    _write_command_template(commands, "update_rpg")
+    project = tmp_path / "project"
+
+    core._materialise_commands_for_agent("codex", commands, project)
+
+    protocol = project / ".agents" / "cmind" / "host-protocol.md"
+    assert protocol.is_file()
+    assert len(list(protocol.parent.glob("host-protocol.md"))) == 1
+    for skill_path in (project / ".agents" / "skills").glob("cmind-*/SKILL.md"):
+        assert "../../cmind/host-protocol.md" in skill_path.read_text(encoding="utf-8")
 
 
 @pytest.mark.parametrize("agent", ["codex", "pi", "omp"])

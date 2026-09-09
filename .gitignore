@@ -435,5 +435,6 @@ workspace/
 .claude/commands/
 
 .agents/skills/cmind-*/
+.agents/cmind/
 .cmind/host-runs/
 .codex/

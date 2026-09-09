@@ -170,6 +170,11 @@ graph.add_node("evidence-1", "evidence")
 graph.add_edge("evidence-1", "claim-1", "supports")
 ```
 
+The development tree adds a format-neutral content reference adapter.
+`ContentDomainAdapter` preserves links from documents, sections, blocks, and
+citations back to nodes in a source research graph, providing a portable
+boundary before Markdown, PDF, slide, or other rendering.
+
 Version 0.1.1 supports Python 3.10+, has no runtime dependencies, and keeps
 the v1 JSON format backward compatible across the 0.1.x line. See the
 [package guide](domain_graph/README.md), [compatibility policy](domain_graph/COMPATIBILITY.md),

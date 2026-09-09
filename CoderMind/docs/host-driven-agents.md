@@ -17,8 +17,10 @@ The integration has three surfaces:
 
 For Codex this means the same project scaffold is usable from Codex App, Codex
 CLI, and Codex IDE integrations: `.agents/skills/` provides workflows and
-`.codex/config.toml` provides the RPG MCP server. The Codex CLI executable is
-not required merely to provision the project.
+`.agents/cmind/host-protocol.md` provides the shared execution protocol, and
+`.codex/config.toml` provides the RPG MCP server. Generated skills point to the
+shared protocol instead of embedding a copy in every skill. The Codex CLI
+executable is not required merely to provision the project.
 
 ## Workspace configuration
 
@@ -86,6 +88,7 @@ proxy. No coding-agent CLI is launched by the bridge.
 
 ```text
 .agents/skills/cmind-*/SKILL.md
+.agents/cmind/host-protocol.md
 .codex/config.toml
 ```
 
@@ -95,6 +98,7 @@ The generated Codex MCP server key is `rpg_tools` and starts `cmind-mcp`.
 
 ```text
 .agents/skills/cmind-*/SKILL.md
+.agents/cmind/host-protocol.md
 .pi/mcp.json
 .pi/extensions/cmind-mcp.ts
 ```
@@ -106,6 +110,7 @@ them with Pi.
 
 ```text
 .omp/skills/cmind-*/SKILL.md
+.omp/cmind/host-protocol.md
 .omp/mcp.json
 ```
 

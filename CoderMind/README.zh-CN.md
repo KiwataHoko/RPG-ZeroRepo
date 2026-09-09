@@ -263,6 +263,7 @@ cmind update
 - [CLI 参考](docs/cli-reference.md) —— `cmind init`、`cmind update`、`cmind check`、`cmind version` 以及所有选项。
 - [配置](docs/configuration.md) —— AI 助手设置、MCP 注册、hook、自动审批和故障排查。
 - [宿主驱动的智能体](docs/host-driven-agents.md) —— Codex/Pi/OMP 的 skills、MCP 接线方式和无嵌套智能体执行协议。
+- [Skill 架构](docs/skill-architecture.md) —— 命名边界、生成源和控制 skill 增长的规则。
 - [项目结构](docs/project-structure.md) —— CoderMind 创建的文件和目录。
 
 ## 即将推出的功能
