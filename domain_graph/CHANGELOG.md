@@ -6,6 +6,8 @@
   blocks, assets, citations, and cross-graph source references.
 - Provide focused builders for document structure and citation provenance while
   keeping research-to-content transformation and rendering outside the adapter.
+- Validate builder prerequisites before mutation, enforce content-parent and
+  source-reference invariants, and provide a format-neutral asset builder.
 - Add `ResearchToContentMapper` with stable source references, selective claim
   mapping, evidence citations, and claim-coverage reporting.
 - Add dependency-free Markdown and escaped HTML renderers for validated content

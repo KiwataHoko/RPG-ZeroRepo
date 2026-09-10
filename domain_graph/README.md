@@ -139,6 +139,8 @@ layout, or slide styling from entering the portable content graph.
 invariants: structural nodes must belong to a document, source references must
 identify an external graph and node, and provenance relations must target a
 `source_ref`. Each citation must have exactly one outgoing `cites` relation.
+Use `add_asset()` for format-neutral media references; renderers recognize its
+`uri`, `media_type`, and `alt` metadata without embedding presentation layout.
 
 ## Research-to-content transformation
 
@@ -148,7 +150,30 @@ places supporting evidence after each claim, creates source references and
 citations, and reports unused or unsupported claims.
 
 ```python
+from domain_graph.adapters import ResearchDomainAdapter
 from domain_graph.transforms import ContentBrief, ResearchToContentMapper
+
+research_graph = ResearchDomainAdapter().create_graph(
+    "research:maintenance",
+    strict_schema=True,
+)
+research_graph.add_node("question-1", "question", name="Why do costs grow?")
+research_graph.add_node("claim-1", "claim", name="Dependencies accumulate.")
+research_graph.add_node("evidence-1", "evidence", name="Longitudinal study")
+research_graph.add_node(
+    "source-1",
+    "source",
+    name="Maintenance study",
+    data={"url": "https://example.test/study"},
+)
+research_graph.add_edge("question-1", "claim-1", "contains")
+research_graph.add_edge("evidence-1", "claim-1", "supports")
+research_graph.add_edge(
+    "evidence-1",
+    "source-1",
+    "derived_from",
+    data={"page": 12},
+)
 
 result = ResearchToContentMapper().convert(
     research_graph,
@@ -184,3 +209,13 @@ Both renderers honor `precedes` relationships between siblings and reject
 ordering cycles. Markdown emits source footnotes. HTML escapes text and
 attribute values and emits linked reference entries. When a graph contains
 multiple document roots, pass `document_id=` explicitly.
+
+## 0.2.0 boundaries
+
+- The mapper creates a grounded editorial outline; it does not generate or
+  polish prose by itself.
+- `source_ref` preserves external graph identity and metadata but does not fetch
+  or resolve remote sources.
+- The built-in renderers produce Markdown text and an HTML article fragment.
+  PDF, EPUB, slides, and site layout remain downstream publishing concerns.
+- Renderer-specific styling does not belong in the serialized Content Graph.
