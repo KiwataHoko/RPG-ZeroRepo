@@ -99,6 +99,22 @@ The adapter is intentionally outside the core root API. New domains can add
 their own adapters without modifying the graph implementation or extending a
 central enum.
 
+### Starting research in Codex
+
+The repository's neutral skills separate evidence work from editorial and
+presentation decisions:
+
+```text
+$research-build → ResearchDomainGraph → $research-content
+                → ContentDomainGraph → $publish-content → Markdown / HTML
+```
+
+Invoke `$research-build` with a question, scope, and any source constraints. It
+collects and assesses sources, represents atomic claims and supporting or
+contradictory evidence with the adapter vocabulary, validates the strict graph,
+and returns versioned JSON. The later skills preserve that provenance while
+turning the findings into readable output.
+
 ## Content adapter
 
 `ContentDomainAdapter` models reusable, source-traceable content independently

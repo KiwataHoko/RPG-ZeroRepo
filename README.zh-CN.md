@@ -190,6 +190,16 @@ graph.add_edge("evidence-1", "claim-1", "supports")
 带论点覆盖报告的溯源大纲，无运行时依赖的渲染器可进一步输出 Markdown 或
 经过安全转义的 HTML。
 
+在 Codex 中，中性的 skills 组成完整的研究发布链路：
+
+```text
+$research-build → ResearchDomainGraph → $research-content
+                → ContentDomainGraph → $publish-content → Markdown / HTML
+```
+
+当输入仍是研究问题或假设时，从 `$research-build` 开始。它会先记录论点、
+支持或反驳证据及来源溯源，再进入内容编排阶段。
+
 0.2.0 支持 Python 3.10 及以上版本，无运行时依赖，并可读取 0.1.x 版本线
 产生的 v1 JSON 图。详见[包使用指南](domain_graph/README.md)、
 [兼容性策略](domain_graph/COMPATIBILITY.md)和

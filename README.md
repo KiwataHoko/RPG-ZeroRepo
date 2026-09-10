@@ -177,6 +177,17 @@ boundary before presentation. `ResearchToContentMapper` creates grounded
 outlines with claim-coverage reporting, and dependency-free renderers produce
 Markdown or escaped HTML.
 
+In Codex, the neutral skills form an end-to-end research publishing pipeline:
+
+```text
+$research-build → ResearchDomainGraph → $research-content
+                → ContentDomainGraph → $publish-content → Markdown / HTML
+```
+
+Start with `$research-build` when the input is still a question or hypothesis.
+It records claims, supporting or contradictory evidence, and source provenance
+before editorial transformation begins.
+
 Version 0.2.0 supports Python 3.10+, has no runtime dependencies, and reads v1
 JSON graphs produced by the 0.1.x line. See the
 [package guide](domain_graph/README.md), [compatibility policy](domain_graph/COMPATIBILITY.md),

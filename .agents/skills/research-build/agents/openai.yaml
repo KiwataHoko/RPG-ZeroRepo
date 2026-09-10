@@ -1,0 +1,4 @@
+interface:
+  display_name: "Research Build"
+  short_description: "Build a source-traceable research graph from a question"
+  default_prompt: "Use $research-build to research this question and produce a validated ResearchDomainGraph."
