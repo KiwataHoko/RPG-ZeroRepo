@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 - 2026-09-10
 
 - Add `ContentDomainAdapter` for format-neutral documents, sections, content
   blocks, assets, citations, and cross-graph source references.
@@ -10,6 +10,8 @@
   mapping, evidence citations, and claim-coverage reporting.
 - Add dependency-free Markdown and escaped HTML renderers for validated content
   graphs, including explicit sibling ordering and citation references.
+- Add an immutable v1 content fixture and retain compatibility checks against
+  the published 0.1.0 reader.
 - Add neutral `research-content` and `publish-content` skills without coupling
   cross-domain content workflows to the CoderMind CLI namespace.
 
@@ -37,7 +39,7 @@
 - Add release metadata, license packaging, clean wheel/sdist install checks,
   checksums, and a tag-driven GitHub Release workflow.
 
-Compatibility policy for the `0.1.x` line: serialized graph format version 1
-and public imports remain backward compatible within the patch-release line.
-Breaking API or wire-format changes require a version increment and changelog
-entry.
+Compatibility policy: serialized graph format version 1 remains readable across
+the `0.x` release lines. Public imports remain backward compatible within each
+minor release line. Breaking API or wire-format changes require an explicit
+migration, version increment, and changelog entry.

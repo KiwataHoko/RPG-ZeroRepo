@@ -1,0 +1,33 @@
+{
+  "format": "domain-graph",
+  "version": 1,
+  "name": "content-article",
+  "schema": {
+    "name": "content",
+    "entity_types": ["document", "section", "block", "asset", "citation", "source_ref"],
+    "relations": [
+      {"name": "contains", "hierarchy": true},
+      {"name": "precedes", "hierarchy": false},
+      {"name": "derived_from", "hierarchy": false},
+      {"name": "cites", "hierarchy": false},
+      {"name": "explains", "hierarchy": false},
+      {"name": "summarizes", "hierarchy": false},
+      {"name": "variant_of", "hierarchy": false}
+    ]
+  },
+  "strict_schema": true,
+  "nodes": [
+    {"id": "document", "entity_type": "document", "name": "A grounded article", "data": {"content_type": "article", "locale": "en"}},
+    {"id": "section:intro", "entity_type": "section", "name": "Introduction", "data": {"kind": "research_question"}},
+    {"id": "block:claim", "entity_type": "block", "name": "", "data": {"kind": "claim", "text": "A source-traceable claim.", "status": "outline"}},
+    {"id": "source_ref:claim", "entity_type": "source_ref", "name": "Original claim", "data": {"source_graph": "research:fixture", "source_node_id": "claim-1", "snapshot_version": 4}},
+    {"id": "citation:claim", "entity_type": "citation", "name": "", "data": {"locator": "p. 12"}}
+  ],
+  "edges": [
+    {"source": "document", "target": "section:intro", "relation": "contains", "data": {}},
+    {"source": "section:intro", "target": "block:claim", "relation": "contains", "data": {}},
+    {"source": "block:claim", "target": "source_ref:claim", "relation": "derived_from", "data": {}},
+    {"source": "block:claim", "target": "citation:claim", "relation": "contains", "data": {}},
+    {"source": "citation:claim", "target": "source_ref:claim", "relation": "cites", "data": {}}
+  ]
+}

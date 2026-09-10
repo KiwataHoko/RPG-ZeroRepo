@@ -16,7 +16,7 @@
 
 🔥 **New: [CoderMind](CoderMind/) now supports Claude Code, GitHub Copilot, Codex App/CLI/IDE, Pi, and oh-my-pi (OMP).**
 
-🧩 **[Domain Graph 0.1.1](https://github.com/KiwataHoko/RPG-ZeroRepo/releases/tag/domain-graph-v0.1.1) is available as a standalone, domain-neutral Python package.**
+🧩 **[Domain Graph 0.2.0](https://github.com/KiwataHoko/RPG-ZeroRepo/releases/tag/domain-graph-v0.2.0) adds source-traceable content transformation and Markdown/HTML rendering.**
 
 Coding agents often lose repository-level context across long tasks: requirements drift, architecture decisions disappear, and edits miss hidden dependencies.
 
@@ -28,6 +28,7 @@ The repository also includes the research code: **[ZeroRepo](#zerorepo-requireme
 
 ## News
 
+- [2026-09-10] 📝 **Domain Graph 0.2.0** adds `ContentDomainAdapter`, deterministic research-to-content mapping, claim-coverage reporting, and Markdown/HTML renderers.
 - [2026-09-09] 🧩 **Domain Graph 0.1.1** is available as a standalone package with a stable v1 JSON format, schema-defined hierarchy semantics, immutable compatibility fixtures, and validation against the real CoderMind code-domain adapter.
 - [2026-05-15] 🚀 **CoderMind** is now open source for Claude Code and GitHub Copilot. It uses Repository Planning Graphs as a control layer for long-horizon coding agents, including planning, multi-file generation, repository understanding, and graph-aware updates.
 - [2026-05-01] 🎉 **RPG-Encoder** ([*Closing the Loop: Universal Repository Representation with RPG-Encoder*](https://arxiv.org/abs/2602.02084)) has been accepted to **ICML 2026**.
@@ -153,7 +154,7 @@ Install the current release directly from GitHub:
 
 ```bash
 python -m pip install \
-  https://github.com/KiwataHoko/RPG-ZeroRepo/releases/download/domain-graph-v0.1.1/domain_graph-0.1.1-py3-none-any.whl
+  https://github.com/KiwataHoko/RPG-ZeroRepo/releases/download/domain-graph-v0.2.0/domain_graph-0.2.0-py3-none-any.whl
 ```
 
 ```python
@@ -170,17 +171,16 @@ graph.add_node("evidence-1", "evidence")
 graph.add_edge("evidence-1", "claim-1", "supports")
 ```
 
-The development tree adds a format-neutral content reference adapter.
 `ContentDomainAdapter` preserves links from documents, sections, blocks, and
 citations back to nodes in a source research graph, providing a portable
-boundary before presentation. `ResearchToContentMapper` now creates grounded
+boundary before presentation. `ResearchToContentMapper` creates grounded
 outlines with claim-coverage reporting, and dependency-free renderers produce
 Markdown or escaped HTML.
 
-Version 0.1.1 supports Python 3.10+, has no runtime dependencies, and keeps
-the v1 JSON format backward compatible across the 0.1.x line. See the
+Version 0.2.0 supports Python 3.10+, has no runtime dependencies, and reads v1
+JSON graphs produced by the 0.1.x line. See the
 [package guide](domain_graph/README.md), [compatibility policy](domain_graph/COMPATIBILITY.md),
-and [0.1.1 release](https://github.com/KiwataHoko/RPG-ZeroRepo/releases/tag/domain-graph-v0.1.1).
+and [0.2.0 release](https://github.com/KiwataHoko/RPG-ZeroRepo/releases/tag/domain-graph-v0.2.0).
 
 ---
 

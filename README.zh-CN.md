@@ -16,7 +16,7 @@
 
 🔥 **[CoderMind](CoderMind/) 现已支持 Claude Code、GitHub Copilot、Codex App/CLI/IDE、Pi 和 oh-my-pi（OMP）。**
 
-🧩 **[Domain Graph 0.1.1](https://github.com/KiwataHoko/RPG-ZeroRepo/releases/tag/domain-graph-v0.1.1) 已作为独立、领域无关的 Python 包发布。**
+🧩 **[Domain Graph 0.2.0](https://github.com/KiwataHoko/RPG-ZeroRepo/releases/tag/domain-graph-v0.2.0) 新增可溯源内容转换与 Markdown/HTML 渲染。**
 
 编码智能体执行长周期仓库任务时容易丢失仓库级上下文：需求发生漂移、架构决策消失、编辑遗漏隐藏依赖。
 
@@ -168,7 +168,7 @@ CoderMind 安装的 post-commit hook 可以在提交后增量更新 RPG，使图
 
 ```bash
 python -m pip install \
-  https://github.com/KiwataHoko/RPG-ZeroRepo/releases/download/domain-graph-v0.1.1/domain_graph-0.1.1-py3-none-any.whl
+  https://github.com/KiwataHoko/RPG-ZeroRepo/releases/download/domain-graph-v0.2.0/domain_graph-0.2.0-py3-none-any.whl
 ```
 
 ```python
@@ -185,15 +185,15 @@ graph.add_node("evidence-1", "evidence")
 graph.add_edge("evidence-1", "claim-1", "supports")
 ```
 
-开发分支新增了格式无关的内容参考适配器。`ContentDomainAdapter` 保留文档、
-章节、内容块和引用到来源研究图节点的联系。`ResearchToContentMapper` 可生成
+`ContentDomainAdapter` 保留文档、章节、内容块和引用到来源研究图节点的联系。
+`ResearchToContentMapper` 可生成
 带论点覆盖报告的溯源大纲，无运行时依赖的渲染器可进一步输出 Markdown 或
 经过安全转义的 HTML。
 
-0.1.1 支持 Python 3.10 及以上版本，无运行时依赖，并保证 0.1.x
-版本线内对 v1 JSON 格式的向后兼容。详见[包使用指南](domain_graph/README.md)、
+0.2.0 支持 Python 3.10 及以上版本，无运行时依赖，并可读取 0.1.x 版本线
+产生的 v1 JSON 图。详见[包使用指南](domain_graph/README.md)、
 [兼容性策略](domain_graph/COMPATIBILITY.md)和
-[0.1.1 Release](https://github.com/KiwataHoko/RPG-ZeroRepo/releases/tag/domain-graph-v0.1.1)。
+[0.2.0 Release](https://github.com/KiwataHoko/RPG-ZeroRepo/releases/tag/domain-graph-v0.2.0)。
 
 ---
 

@@ -9,7 +9,7 @@ from domain_graph import DomainGraph
 
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "v1"
-FIXTURE_NAMES = ("minimal", "research", "unicode_nested", "open_world")
+FIXTURE_NAMES = ("minimal", "research", "content", "unicode_nested", "open_world")
 
 
 def load_fixture(name: str) -> dict:
@@ -79,6 +79,21 @@ def test_research_fixture_preserves_schema_and_query_semantics():
     assert [node.id for node in graph.children("q1")] == ["c1", "c2"]
     assert [node.id for node in graph.descendants("q1")] == ["c1", "c2", "e1"]
     assert [node.id for node in graph.neighbors("e1", relation="supports")] == ["c1"]
+
+
+def test_content_fixture_preserves_structure_and_provenance():
+    graph = DomainGraph.from_dict(load_fixture("content"))
+
+    assert graph.domain_schema.name == "content"
+    assert [node.id for node in graph.descendants("document")] == [
+        "section:intro",
+        "block:claim",
+        "citation:claim",
+    ]
+    assert [
+        node.id for node in graph.neighbors("block:claim", relation="derived_from")
+    ] == ["source_ref:claim"]
+    assert graph.get_node("source_ref:claim").data["snapshot_version"] == 4
 
 
 def test_unicode_nested_fixture_preserves_unicode_and_nested_data():

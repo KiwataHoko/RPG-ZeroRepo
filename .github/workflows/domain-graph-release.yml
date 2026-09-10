@@ -74,13 +74,26 @@ jobs:
 
           import domain_graph
           from domain_graph.adapters import ResearchDomainAdapter
+          from domain_graph.renderers import HtmlRenderer, MarkdownRenderer
+          from domain_graph.transforms import ContentBrief, ResearchToContentMapper
 
           assert importlib.metadata.version("domain-graph") == domain_graph.__version__
           graph = ResearchDomainAdapter().create_graph("release", strict_schema=True)
           graph.add_node("q", "question")
           graph.add_node("c", "claim")
+          graph.add_node("e", "evidence")
+          graph.add_node("s", "source", data={"url": "https://example.test"})
           graph.add_edge("q", "c", "contains")
+          graph.add_edge("e", "c", "supports")
+          graph.add_edge("e", "s", "derived_from")
           assert [node.id for node in graph.children("q")] == ["c"]
+          result = ResearchToContentMapper().convert(
+              graph,
+              ContentBrief(title="Release smoke test"),
+          )
+          assert result.validation_issues == ()
+          assert "# Release smoke test" in MarkdownRenderer().render(result.graph)
+          assert "<h1>Release smoke test</h1>" in HtmlRenderer().render(result.graph)
           PY
 
       - name: Verify clean source distribution install

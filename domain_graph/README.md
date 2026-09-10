@@ -1,6 +1,6 @@
 # Domain Graph core
 
-[![Release: 0.1.1](https://img.shields.io/badge/release-0.1.1-blue.svg)](https://github.com/KiwataHoko/RPG-ZeroRepo/releases/tag/domain-graph-v0.1.1)
+[![Release: 0.2.0](https://img.shields.io/badge/release-0.2.0-blue.svg)](https://github.com/KiwataHoko/RPG-ZeroRepo/releases/tag/domain-graph-v0.2.0)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Wire format: v1](https://img.shields.io/badge/wire%20format-v1-green.svg)](./COMPATIBILITY.md)
 
@@ -19,10 +19,10 @@ The stable public surface is exported from `domain_graph`:
 
 ## Install
 
-Install the 0.1.1 wheel from the GitHub Release:
+Install the 0.2.0 wheel from the GitHub Release:
 
 ```bash
-python -m pip install https://github.com/KiwataHoko/RPG-ZeroRepo/releases/download/domain-graph-v0.1.1/domain_graph-0.1.1-py3-none-any.whl
+python -m pip install https://github.com/KiwataHoko/RPG-ZeroRepo/releases/download/domain-graph-v0.2.0/domain_graph-0.2.0-py3-none-any.whl
 ```
 
 For development from this repository:
@@ -32,24 +32,23 @@ python -m pip install -e ./domain_graph
 ```
 
 The distribution name is `domain-graph`; the import package remains
-`domain_graph`. Version `0.1.1` has no runtime dependencies.
+`domain_graph`. Version `0.2.0` has no runtime dependencies.
 
 Release artifacts include both a wheel and source distribution plus SHA-256
 checksums. The release workflow verifies the package metadata, runs the core
 and adapter tests, and installs both artifacts in clean virtual environments
 before publishing the GitHub Release.
 
-Release resources: [0.1.1 downloads](https://github.com/KiwataHoko/RPG-ZeroRepo/releases/tag/domain-graph-v0.1.1)
+Release resources: [0.2.0 downloads](https://github.com/KiwataHoko/RPG-ZeroRepo/releases/tag/domain-graph-v0.2.0)
 · [changelog](./CHANGELOG.md) · [compatibility policy](./COMPATIBILITY.md).
 
 ## Compatibility
 
-The current JSON wire format is `format="domain-graph"`, `version=1`. The
-`0.1.x` release line promises semantic backward compatibility for v1 payloads
-and the public package surface; it does not promise byte-for-byte equality of
-serialized JSON. Node and edge `data` must be JSON-native, and real adapters
-must preserve domain semantics through validation and serialization
-round-trips.
+The current JSON wire format is `format="domain-graph"`, `version=1`. Version
+`0.2.0` reads v1 payloads from the `0.1.x` line and preserves their graph
+semantics; it does not promise byte-for-byte equality of serialized JSON. Node
+and edge `data` must be JSON-native, and real adapters must preserve domain
+semantics through validation and serialization round-trips.
 
 See the [compatibility policy](./COMPATIBILITY.md) for the v1 contract, golden
 fixture rules, forward-compatibility limits, adapter acceptance criteria, and
@@ -101,8 +100,6 @@ their own adapters without modifying the graph implementation or extending a
 central enum.
 
 ## Content adapter
-
-> Available on the development branch and scheduled for the next release.
 
 `ContentDomainAdapter` models reusable, source-traceable content independently
 of its final presentation format. Its vocabulary covers documents, sections,

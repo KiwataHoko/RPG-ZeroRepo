@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "domain-graph"
-version = "0.1.1"
+version = "0.2.0"
 description = "Domain-neutral graph core with schema-defined hierarchy semantics"
 readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.10"
@@ -21,15 +21,16 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = []
 
 [project.urls]
-Homepage = "https://github.com/KiwataHoko/RPG-ZeroRepo/tree/domain-graph-v0.1.1/domain_graph"
+Homepage = "https://github.com/KiwataHoko/RPG-ZeroRepo/tree/domain-graph-v0.2.0/domain_graph"
 Repository = "https://github.com/KiwataHoko/RPG-ZeroRepo"
 Issues = "https://github.com/KiwataHoko/RPG-ZeroRepo/issues"
-Changelog = "https://github.com/KiwataHoko/RPG-ZeroRepo/blob/domain-graph-v0.1.1/domain_graph/CHANGELOG.md"
+Changelog = "https://github.com/KiwataHoko/RPG-ZeroRepo/blob/domain-graph-v0.2.0/domain_graph/CHANGELOG.md"
 
 [tool.setuptools]
 packages = [

@@ -9,6 +9,9 @@ from domain_graph import (
     __all__ as public_api,
     __version__,
 )
+from domain_graph.adapters import __all__ as adapter_api
+from domain_graph.renderers import __all__ as renderer_api
+from domain_graph.transforms import __all__ as transform_api
 
 
 EXPECTED_PUBLIC_API = {
@@ -30,11 +33,26 @@ EXPECTED_PUBLIC_API = {
 
 
 def test_distribution_and_public_versions_match_release():
-    assert importlib.metadata.version("domain-graph") == __version__ == "0.1.1"
+    assert importlib.metadata.version("domain-graph") == __version__ == "0.2.0"
 
 
 def test_initial_public_api_remains_available():
     assert set(public_api) >= EXPECTED_PUBLIC_API
+
+
+def test_v020_public_subpackages_are_explicit():
+    assert set(adapter_api) == {
+        "CONTENT_DOMAIN_SCHEMA",
+        "RESEARCH_DOMAIN_SCHEMA",
+        "ContentDomainAdapter",
+        "ResearchDomainAdapter",
+    }
+    assert set(transform_api) == {
+        "ContentBrief",
+        "ContentMappingResult",
+        "ResearchToContentMapper",
+    }
+    assert set(renderer_api) == {"HtmlRenderer", "MarkdownRenderer"}
 
 
 def test_wire_format_v1_contract_is_stable():

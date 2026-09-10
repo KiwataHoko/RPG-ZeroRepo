@@ -5,9 +5,10 @@ format. The current wire format is `domain-graph`, version `1`.
 
 ## v1 backward compatibility
 
-Within the `0.1.x` release line, a newer patch release must be able to read
-graphs written by `0.1.0` and preserve their graph semantics. The v1 contract
-includes the following public shapes and meanings:
+Version `0.2.0` and later `0.2.x` releases must read graphs written by every
+`0.1.x` release and preserve their graph semantics. Later releases that retain
+wire format v1 carry the same obligation. The v1 contract includes the
+following public shapes and meanings:
 
 - Top-level fields: `format`, `version`, `name`, `schema`, `strict_schema`,
   `nodes`, and `edges`.
@@ -16,11 +17,13 @@ includes the following public shapes and meanings:
 - Node fields: `id`, `entity_type`, `name`, and `data`.
 - Edge fields: `source`, `target`, `relation`, and `data`.
 
-The public names exported from `domain_graph` remain available throughout the
-release line. Additive API changes are allowed; removals, renames, or changed
-graph/query semantics require an explicit release decision and changelog
-entry. Open-world validation by default and opt-in `strict_schema=True` are
-part of the current behavior.
+The public names exported from `domain_graph` in `0.1.x` remain available in
+`0.2.x`. The content adapter, research-to-content transformation, and Markdown
+and HTML renderers introduced in `0.2.0` remain stable throughout the `0.2.x`
+line. Additive API changes are allowed; removals, renames, or changed graph/query
+semantics require an explicit release decision and changelog entry. Open-world
+validation by default and opt-in `strict_schema=True` are part of the current
+behavior.
 
 ## Forward-compatibility limits
 
@@ -74,8 +77,7 @@ relevant, Unicode, nested JSON data, and at least one hierarchy traversal.
 ## Supported runtime and CI
 
 The package declares Python `>=3.10`, has no runtime dependencies, and lists
-Python 3.10, 3.11, and 3.12 classifiers. The current release workflow runs
-the standalone tests and packaging checks on Python 3.12. A release claiming
-tested compatibility for each supported minor version must add that version
-to the CI matrix and run the complete `domain_graph/tests` and golden-fixture
-suites there.
+Python 3.10, 3.11, 3.12, and 3.13 classifiers. CI runs the complete
+`domain_graph/tests` and golden-fixture suites on each listed minor version.
+The release workflow performs packaging and clean-install checks on Python
+3.12.

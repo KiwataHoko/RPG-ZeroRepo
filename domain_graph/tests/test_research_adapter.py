@@ -7,7 +7,7 @@ from domain_graph.adapters import RESEARCH_DOMAIN_SCHEMA, ResearchDomainAdapter
 
 
 def test_distribution_version_matches_public_version():
-    assert importlib.metadata.version("domain-graph") == __version__ == "0.1.1"
+    assert importlib.metadata.version("domain-graph") == __version__ == "0.2.0"
 
 
 def test_research_adapter_builds_and_round_trips_real_domain_graph():
