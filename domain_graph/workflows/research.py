@@ -10,6 +10,37 @@ from ..adapters import ResearchDomainAdapter
 from ..graph import DomainGraph, ValidationIssue
 
 
+def _require_records(
+    label: str, records: list[dict[str, Any]], fields: tuple[str, ...]
+) -> None:
+    for index, record in enumerate(records):
+        if not isinstance(record, dict):
+            raise TypeError(f"{label} record {index} must be an object")
+        missing = [field for field in fields if not record.get(field)]
+        if missing:
+            raise ValueError(
+                f"{label} record {index} is missing fields: {', '.join(missing)}"
+            )
+
+
+def _materialized_source_data(source: dict[str, Any]) -> dict[str, Any]:
+    data = {
+        key: value
+        for key, value in source.items()
+        if key not in {"id", "title", "locator"}
+    }
+    locator = str(source["locator"])
+    if locator.startswith(("https://", "http://")):
+        data["url"] = locator
+    elif locator.upper().startswith("ISBN "):
+        data["isbn"] = locator[5:].strip()
+    elif locator.upper().startswith("DOI "):
+        data["doi"] = locator[4:].strip()
+    else:
+        data["document_id"] = locator
+    return data
+
+
 @dataclass(frozen=True)
 class ResearchBrief:
     question: str
@@ -164,6 +195,22 @@ class ResearchPlan:
         task.status = "failed"
         task.result = dict(result)
 
+    def reopen(self, task_id: str) -> tuple[str, ...]:
+        self.get(task_id)
+        reopened = {task_id}
+        changed = True
+        while changed:
+            changed = False
+            for task in self.tasks:
+                if task.id not in reopened and set(task.depends_on) & reopened:
+                    reopened.add(task.id)
+                    changed = True
+        for task in self.tasks:
+            if task.id in reopened:
+                task.status = "pending"
+                task.result = {}
+        return tuple(task.id for task in self.tasks if task.id in reopened)
+
     def to_dict(self) -> dict[str, Any]:
         return {"version": 1, "tasks": [task.to_dict() for task in self.tasks]}
 
@@ -249,10 +296,18 @@ class ResearchBuildPipeline:
         self._write_plan(plan)
         self._event("task_failed", task_id=task_id)
 
+    def reopen_task(self, task_id: str) -> tuple[str, ...]:
+        plan = self._load_plan()
+        reopened = plan.reopen(task_id)
+        self._write_plan(plan)
+        self._event("tasks_reopened", task_ids=list(reopened))
+        return reopened
+
     def validate_graph(self, graph: DomainGraph) -> tuple[ValidationIssue, ...]:
         return ResearchDomainAdapter().validate_research(graph)
 
-    def finalize(self, graph: DomainGraph) -> Path:
+    def materialize(self) -> Path:
+        """Build a strict draft graph deterministically from completed checkpoints."""
         status = self.status()
         if not status.complete:
             unfinished = (
@@ -262,6 +317,131 @@ class ResearchBuildPipeline:
                 + status.blocked_task_ids
             )
             raise ValueError(f"unfinished research tasks: {', '.join(unfinished)}")
+        plan = self._load_plan()
+        checkpoint_errors = []
+        for task in plan.tasks:
+            try:
+                self._validate_task_result(task, task.result)
+            except (TypeError, ValueError) as exc:
+                checkpoint_errors.append(f"{task.id}: {exc}")
+        if checkpoint_errors:
+            raise ValueError(
+                "invalid task checkpoints; reopen the named tasks: "
+                + "; ".join(checkpoint_errors)
+            )
+        brief = json.loads(self.spec_path.read_text(encoding="utf-8"))
+        theory_records = plan.get("candidate-theories").result["theories"]
+        evidence_result = plan.get("evidence-search").result
+        counterexample_result = plan.get("counterexample-search").result
+        final_claim_ids = {
+            str(value) for value in plan.get("synthesize").result["claim_ids"]
+        }
+        claim_records = {str(item["id"]): item for item in evidence_result["claims"]}
+        if final_claim_ids != set(claim_records):
+            raise ValueError(
+                "synthesize claim_ids must exactly match materialized claim records"
+            )
+        source_records: dict[str, dict[str, Any]] = {}
+        for task in plan.tasks:
+            for source in task.result.get("sources", ()):
+                source_id = str(source["id"])
+                if source_id in source_records and source_records[source_id] != source:
+                    raise ValueError(
+                        f"conflicting retrieval records for source {source_id!r}"
+                    )
+                source_records[source_id] = source
+
+        adapter = ResearchDomainAdapter()
+        graph = adapter.create_graph(
+            f"research:{self.workspace.name}", strict_schema=True
+        )
+        question_id = "q:research"
+        graph.add_node(
+            question_id,
+            "question",
+            name=str(brief["question"]),
+            data={
+                "scope": brief.get("scope", ""),
+                "constraints": brief.get("constraints", []),
+                "success_criteria": brief.get("success_criteria", []),
+            },
+        )
+        for theory in theory_records:
+            theory_id = str(theory["id"])
+            graph.add_node(
+                theory_id,
+                "theory",
+                name=str(theory["name"]),
+                data={
+                    key: theory[key]
+                    for key in (
+                        "mechanism",
+                        "boundary_conditions",
+                        "failure_conditions",
+                        "predictions",
+                    )
+                },
+            )
+            graph.add_edge(question_id, theory_id, "contains")
+        for claim in claim_records.values():
+            claim_id = str(claim["id"])
+            graph.add_node(
+                claim_id,
+                "claim",
+                name=str(claim["name"]),
+                data={"status": str(claim.get("status", "supported"))},
+            )
+            graph.add_edge(question_id, claim_id, "contains")
+            for theory_id in claim["theory_ids"]:
+                graph.add_edge(str(theory_id), claim_id, "explains")
+        for source in source_records.values():
+            graph.add_node(
+                str(source["id"]),
+                "source",
+                name=str(source.get("title") or source["id"]),
+                data=_materialized_source_data(source),
+            )
+        evidence_records = list(evidence_result["evidence"]) + list(
+            counterexample_result["counterexamples"]
+        )
+        for evidence in evidence_records:
+            evidence_id = str(evidence["id"])
+            graph.add_node(
+                evidence_id,
+                "evidence",
+                name=str(evidence["name"]),
+                data={
+                    "locator": str(evidence["locator"]),
+                    "role": (
+                        "counterexample"
+                        if evidence["relation"] == "contradicts"
+                        else "support"
+                    ),
+                },
+            )
+            graph.add_edge(evidence_id, str(evidence["source_id"]), "derived_from")
+            graph.add_edge(
+                evidence_id, str(evidence["claim_id"]), str(evidence["relation"])
+            )
+        issues = self.validate_graph(graph)
+        if issues:
+            raise ValueError(
+                "materialized research graph failed quality gates: "
+                + ", ".join(f"{issue.kind}@{issue.location}" for issue in issues)
+            )
+        output = self.directory / "draft-research.json"
+        output.write_text(graph.to_json(indent=2) + "\n", encoding="utf-8")
+        self._event("materialized", output=str(output))
+        return output
+
+    def finalize(self, graph: DomainGraph | None = None) -> Path:
+        if graph is None:
+            graph = DomainGraph.from_json(
+                self.materialize().read_text(encoding="utf-8")
+            )
+        status = self.status()
+        if not status.complete:
+            raise ValueError("unfinished research tasks")
         issues = self.validate_graph(graph)
         plan = self._load_plan()
         theory_ids = {node.id for node in graph.get_nodes_by_type("theory")}
@@ -351,7 +531,7 @@ class ResearchBuildPipeline:
             "define-concepts": ("concepts", "distinctions", "acceptance_tests"),
             "candidate-theories": ("theories",),
             "textbook-search": ("sources",),
-            "evidence-search": ("sources", "claim_ids"),
+            "evidence-search": ("sources", "claims", "evidence"),
             "counterexample-search": ("sources", "counterexamples"),
             "discriminatory-tests": ("comparisons",),
             "synthesize": ("claim_ids", "revisions"),
@@ -365,6 +545,19 @@ class ResearchBuildPipeline:
             raise ValueError(
                 "candidate-theories requires at least two competing theories"
             )
+        if task.id == "candidate-theories":
+            _require_records(
+                "theory",
+                result["theories"],
+                (
+                    "id",
+                    "name",
+                    "mechanism",
+                    "boundary_conditions",
+                    "failure_conditions",
+                    "predictions",
+                ),
+            )
         if "sources" in required:
             for source in result["sources"]:
                 fields = ("id", "source_type", "locator", "accessed_at")
@@ -377,6 +570,25 @@ class ResearchBuildPipeline:
             source["source_type"] == "textbook" for source in result["sources"]
         ):
             raise ValueError("textbook-search must verify at least one textbook")
+        if task.id == "evidence-search":
+            _require_records("claim", result["claims"], ("id", "name", "theory_ids"))
+            _require_records(
+                "evidence",
+                result["evidence"],
+                ("id", "name", "claim_id", "source_id", "locator", "relation"),
+            )
+            if any(item["relation"] != "supports" for item in result["evidence"]):
+                raise ValueError("evidence-search records must use supports")
+        if task.id == "counterexample-search":
+            _require_records(
+                "counterexample",
+                result["counterexamples"],
+                ("id", "name", "claim_id", "source_id", "locator", "relation"),
+            )
+            if any(
+                item["relation"] != "contradicts" for item in result["counterexamples"]
+            ):
+                raise ValueError("counterexample-search records must use contradicts")
 
     def _load_plan(self) -> ResearchPlan:
         if not self.plan_path.exists():
@@ -415,16 +627,18 @@ def main(argv: list[str] | None = None) -> int:
     init.add_argument("--success-criterion", action="append", default=[])
     init.add_argument("--overwrite", action="store_true")
     commands.add_parser("status")
-    for name in ("start",):
+    for name in ("start", "reopen"):
         command = commands.add_parser(name)
         command.add_argument("task_id")
     for name in ("complete", "fail"):
         command = commands.add_parser(name)
         command.add_argument("task_id")
         command.add_argument("--result-file", required=True)
-    for name in ("validate", "finalize"):
-        command = commands.add_parser(name)
-        command.add_argument("--graph", required=True)
+    commands.add_parser("materialize")
+    validate = commands.add_parser("validate")
+    validate.add_argument("--graph", required=True)
+    finalize = commands.add_parser("finalize")
+    finalize.add_argument("--graph")
     args = parser.parse_args(argv)
     pipeline = ResearchBuildPipeline(args.workspace)
     if args.command == "init":
@@ -450,6 +664,11 @@ def main(argv: list[str] | None = None) -> int:
     elif args.command == "start":
         pipeline.start_task(args.task_id)
         payload = {"type": "task_started", "task_id": args.task_id}
+    elif args.command == "reopen":
+        payload = {
+            "type": "tasks_reopened",
+            "task_ids": list(pipeline.reopen_task(args.task_id)),
+        }
     elif args.command in {"complete", "fail"}:
         result = json.loads(Path(args.result_file).read_text(encoding="utf-8"))
         getattr(pipeline, f"{args.command}_task")(args.task_id, result)
@@ -458,21 +677,42 @@ def main(argv: list[str] | None = None) -> int:
             "task_id": args.task_id,
             "next": list(pipeline.status().ready_task_ids),
         }
-    else:
+    elif args.command == "materialize":
+        output = pipeline.materialize()
+        payload = {"type": "materialized", "output": str(output)}
+    elif args.command == "validate":
         graph = DomainGraph.from_json(Path(args.graph).read_text(encoding="utf-8"))
-        if args.command == "validate":
-            issues = pipeline.validate_graph(graph)
-            payload = {
-                "type": "validation",
-                "passed": not issues,
-                "issues": [asdict(issue) for issue in issues],
-            }
-        else:
-            output = pipeline.finalize(graph)
-            payload = {"type": "finalized", "output": str(output)}
+        issues = pipeline.validate_graph(graph)
+        payload = {
+            "type": "validation",
+            "passed": not issues,
+            "issues": [asdict(issue) for issue in issues],
+        }
+    else:
+        graph = (
+            DomainGraph.from_json(Path(args.graph).read_text(encoding="utf-8"))
+            if args.graph
+            else None
+        )
+        output = pipeline.finalize(graph)
+        payload = {"type": "finalized", "output": str(output)}
     print(json.dumps(payload, ensure_ascii=False))
     return 0
 
 
+def cli() -> int:
+    """Console entry point that reports recoverable workflow errors as JSON."""
+    try:
+        return main()
+    except (FileNotFoundError, KeyError, TypeError, ValueError) as exc:
+        print(
+            json.dumps(
+                {"type": "error", "error": str(exc)},
+                ensure_ascii=False,
+            )
+        )
+        return 1
+
+
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(cli())

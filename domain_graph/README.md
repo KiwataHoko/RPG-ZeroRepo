@@ -116,6 +116,9 @@ Only ready tasks may start. Completed retrieval tasks must record source IDs,
 types, stable locators, and access dates. `finalize` cross-checks those records
 against the Research Graph and requires competing theories, supporting evidence,
 and contradictory evidence before emitting the final graph and coverage report.
+The `materialize` command deterministically constructs the draft graph from task
+checkpoints; `reopen` resets an invalid task and every transitive dependent so
+older checkpoint contracts can be upgraded without restarting the study.
 
 ### Starting research in Codex
 

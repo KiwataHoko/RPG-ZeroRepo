@@ -19,10 +19,13 @@ research is unfinished until its task DAG and semantic quality gates pass.
 3. Continue through specification, discovery, challenge, and synthesis. A
    failed task remains a checkpointed retry; resume it instead of replacing the
    plan or writing the final graph directly.
-4. Build the graph from completed task records. Run the CLI `validate` command,
-   resolve every issue, then use `finalize`. Treat successful `finalize` as the
-   only completion signal.
-5. Deliver `.research/research.domain-graph.json`, the plan and coverage report,
+4. Run `materialize` after every task is complete. It deterministically creates
+   the draft graph from checkpoints. If it reports an invalid checkpoint, use
+   `reopen` on each named task and execute the reopened dependency chain.
+5. Run `validate` on the materialized draft, resolve every issue, then run
+   `finalize` without supplying another graph. Treat successful `finalize` as
+   the only completion signal.
+6. Deliver `.research/research.domain-graph.json`, the plan and coverage report,
    plus a compact summary of surviving explanations, contradictions, source
    quality, unsupported claims, and uncertainty.
 

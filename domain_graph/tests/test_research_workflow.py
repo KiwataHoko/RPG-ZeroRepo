@@ -4,6 +4,7 @@ import json
 
 import pytest
 
+from domain_graph import DomainGraph
 from domain_graph.adapters import ResearchDomainAdapter
 from domain_graph.workflows import (
     ResearchBrief,
@@ -89,15 +90,80 @@ def _task_result(task_id):
             "distinctions": ["profit != cash"],
             "acceptance_tests": ["distinguishes rents"],
         },
-        "candidate-theories": {"theories": [{"id": "t:value"}, {"id": "t:rent"}]},
+        "candidate-theories": {
+            "theories": [
+                {
+                    "id": "t:value",
+                    "name": "value creation and capture",
+                    "mechanism": "valuable output",
+                    "boundary_conditions": ["exchange"],
+                    "failure_conditions": ["rent"],
+                    "predictions": ["returns decay without value"],
+                },
+                {
+                    "id": "t:rent",
+                    "name": "institutional rent",
+                    "mechanism": "privileged control",
+                    "boundary_conditions": ["exclusion"],
+                    "failure_conditions": ["open entry"],
+                    "predictions": ["returns change with rules"],
+                },
+            ]
+        },
         "textbook-search": {"sources": [source_textbook]},
         "evidence-search": {
             "sources": [source_textbook, source_paper],
-            "claim_ids": ["c:value", "c:rent"],
+            "claims": [
+                {
+                    "id": "c:value",
+                    "name": "Some durable returns follow value creation.",
+                    "theory_ids": ["t:value"],
+                },
+                {
+                    "id": "c:rent",
+                    "name": "Some returns follow privileged control.",
+                    "theory_ids": ["t:rent"],
+                },
+            ],
+            "evidence": [
+                {
+                    "id": "e:value+",
+                    "name": "Evidence for value",
+                    "claim_id": "c:value",
+                    "source_id": "s:textbook",
+                    "locator": "chapter 8",
+                    "relation": "supports",
+                },
+                {
+                    "id": "e:rent+",
+                    "name": "Evidence for rent",
+                    "claim_id": "c:rent",
+                    "source_id": "s:paper",
+                    "locator": "p. 4",
+                    "relation": "supports",
+                },
+            ],
         },
         "counterexample-search": {
             "sources": [source_textbook, source_paper],
-            "counterexamples": [{"claim_id": "c:value"}, {"claim_id": "c:rent"}],
+            "counterexamples": [
+                {
+                    "id": "e:value-",
+                    "name": "Rent challenges value",
+                    "claim_id": "c:value",
+                    "source_id": "s:paper",
+                    "locator": "p. 10",
+                    "relation": "contradicts",
+                },
+                {
+                    "id": "e:rent-",
+                    "name": "Entry challenges rent",
+                    "claim_id": "c:rent",
+                    "source_id": "s:textbook",
+                    "locator": "chapter 13",
+                    "relation": "contradicts",
+                },
+            ],
         },
         "discriminatory-tests": {"comparisons": ["value versus rent"]},
         "synthesize": {
@@ -197,3 +263,38 @@ def test_pipeline_rejects_placeholder_task_results(tmp_path):
     pipeline.start_task("define-concepts")
     with pytest.raises(ValueError, match="missing non-empty fields"):
         pipeline.complete_task("define-concepts", {"artifact": "looks-finished.json"})
+
+
+def test_pipeline_materializes_graph_from_normalized_checkpoints(tmp_path):
+    pipeline = ResearchBuildPipeline(tmp_path)
+    pipeline.initialize(ResearchBrief(question="赚钱到底是什么？"))
+    while pipeline.status().ready_task_ids:
+        for task_id in pipeline.status().ready_task_ids:
+            pipeline.start_task(task_id)
+            pipeline.complete_task(task_id, _task_result(task_id))
+
+    draft = pipeline.materialize()
+    graph = DomainGraph.from_json(draft.read_text())
+    assert graph.get_node("q:research").name == "赚钱到底是什么？"
+    assert {node.id for node in graph.get_nodes_by_type("theory")} == {
+        "t:value",
+        "t:rent",
+    }
+    assert ResearchDomainAdapter().validate_research(graph) == ()
+    assert pipeline.finalize() == tmp_path / ".research/research.domain-graph.json"
+
+
+def test_reopen_resets_task_and_transitive_dependents(tmp_path):
+    pipeline = ResearchBuildPipeline(tmp_path)
+    pipeline.initialize(ResearchBrief(question="赚钱到底是什么？"))
+    while pipeline.status().ready_task_ids:
+        for task_id in pipeline.status().ready_task_ids:
+            pipeline.start_task(task_id)
+            pipeline.complete_task(task_id, _task_result(task_id))
+
+    pipeline.reopen_task("candidate-theories")
+    status = pipeline.status()
+    assert "candidate-theories" in status.ready_task_ids
+    assert "evidence-search" in status.blocked_task_ids
+    assert "synthesize" in status.blocked_task_ids
+    assert "textbook-search" in status.completed_task_ids
