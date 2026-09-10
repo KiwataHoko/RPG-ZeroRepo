@@ -84,6 +84,18 @@ def test_mapper_reports_selected_claims_without_supporting_evidence():
     assert result.validation_issues == ()
 
 
+def test_mapper_uses_brief_title_for_claims_without_a_question():
+    research = ResearchDomainAdapter().create_graph("research:zh", strict_schema=True)
+    research.add_node("c1", "claim", name="孤立论点")
+
+    result = ResearchToContentMapper().convert(
+        research,
+        ContentBrief(title="读物", findings_title="补充发现"),
+    )
+
+    assert result.graph.get_node("section:additional-findings").name == "补充发现"
+
+
 def test_mapper_rejects_unknown_claims_and_non_research_graphs():
     mapper = ResearchToContentMapper()
     with pytest.raises(ValueError, match="unknown selected claim IDs: missing"):
@@ -95,6 +107,12 @@ def test_mapper_rejects_unknown_claims_and_non_research_graphs():
     content_graph = mapper.content_adapter.create_document("content", "document")
     with pytest.raises(ValueError, match="research domain schema"):
         mapper.convert(content_graph, ContentBrief(title="Invalid source"))
+
+    invalid_research = _research_graph()
+    invalid_research.strict_schema = False
+    invalid_research.add_node("unknown", "unknown")
+    with pytest.raises(ValueError, match="invalid research graph"):
+        mapper.convert(invalid_research, ContentBrief(title="Invalid graph"))
 
 
 def test_mapper_assigns_a_shared_claim_to_the_first_question_once():

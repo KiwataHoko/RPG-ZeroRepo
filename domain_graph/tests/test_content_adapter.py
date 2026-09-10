@@ -1,6 +1,8 @@
 """Tests for the source-traceable content reference adapter."""
 
-from domain_graph import DomainGraph
+import pytest
+
+from domain_graph import DomainGraph, NodeNotFoundError
 from domain_graph.adapters import CONTENT_DOMAIN_SCHEMA, ContentDomainAdapter
 
 
@@ -107,3 +109,61 @@ def test_content_validator_reports_orphans_and_invalid_provenance():
         "provenance_target",
         "source_reference",
     }
+
+
+def test_content_builders_validate_prerequisites_before_mutating():
+    adapter = ContentDomainAdapter()
+    graph = adapter.create_document("atomic", "document")
+
+    with pytest.raises(NodeNotFoundError):
+        adapter.add_section(graph, "section", "missing")
+    assert "section" not in graph.nodes
+
+    adapter.add_section(graph, "section", "document")
+    adapter.add_block(graph, "block", "section", kind="paragraph")
+    with pytest.raises(NodeNotFoundError):
+        adapter.add_citation(graph, "citation", "block", "missing-source")
+    assert "citation" not in graph.nodes
+
+
+def test_content_adapter_adds_assets_and_rejects_empty_source_references():
+    adapter = ContentDomainAdapter()
+    graph = adapter.create_document("assets", "document")
+    asset = adapter.add_asset(
+        graph,
+        "asset:diagram",
+        "document",
+        name="Domain flow",
+        uri="diagram.svg",
+        media_type="image/svg+xml",
+        alt="Research to content flow",
+    )
+
+    assert asset.data == {
+        "uri": "diagram.svg",
+        "media_type": "image/svg+xml",
+        "alt": "Research to content flow",
+    }
+    assert adapter.validate_content(graph) == ()
+
+    with pytest.raises(ValueError, match="source_graph"):
+        adapter.add_source_ref(
+            graph,
+            "source:empty",
+            source_graph="",
+            source_node_id="claim",
+        )
+    assert "source:empty" not in graph.nodes
+
+
+def test_content_validator_rejects_multiple_hierarchy_parents():
+    adapter = ContentDomainAdapter()
+    graph = adapter.create_document("parents", "document")
+    adapter.add_section(graph, "section:a", "document")
+    adapter.add_section(graph, "section:b", "document")
+    adapter.add_block(graph, "block", "section:a", kind="paragraph")
+    graph.add_edge("section:b", "block", "contains")
+
+    issues = adapter.validate_content(graph)
+
+    assert [issue.kind for issue in issues].count("content_parent") == 1

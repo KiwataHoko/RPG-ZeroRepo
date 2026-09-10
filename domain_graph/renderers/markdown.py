@@ -1,5 +1,7 @@
 """Markdown renderer for content-domain graphs."""
 
+import re
+
 from ..graph import DomainGraph
 from ..model import DomainNode
 from ._tree import citation_source, ordered_children, select_document
@@ -36,7 +38,12 @@ class MarkdownRenderer:
             return self._render_block(graph, node, heading_level)
         if node.entity_type == "asset":
             alt = str(node.data.get("alt") or node.name or "asset")
-            url = str(node.data.get("url") or node.data.get("path") or "")
+            url = str(
+                node.data.get("uri")
+                or node.data.get("url")
+                or node.data.get("path")
+                or ""
+            )
             return [f"![{alt}]({url})", ""]
         return []
 
@@ -58,7 +65,9 @@ class MarkdownRenderer:
         )
         if kind == "code":
             language = str(node.data.get("language", ""))
-            lines = [f"```{language}", text, "```", ""]
+            backtick_runs = (len(match.group(0)) for match in re.finditer(r"`+", text))
+            fence = "`" * max(3, max(backtick_runs, default=0) + 1)
+            lines = [f"{fence}{language}", text, fence, ""]
         elif kind == "quote":
             lines = [*(f"> {line}" for line in text.splitlines()), ""]
         elif kind == "list":

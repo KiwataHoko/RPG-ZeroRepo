@@ -81,7 +81,12 @@ class HtmlRenderer:
         if node.entity_type == "asset":
             alt = escape(str(node.data.get("alt") or node.name or "asset"), quote=True)
             url = escape(
-                str(node.data.get("url") or node.data.get("path") or ""),
+                str(
+                    node.data.get("uri")
+                    or node.data.get("url")
+                    or node.data.get("path")
+                    or ""
+                ),
                 quote=True,
             )
             return [f'{indent}<img src="{url}" alt="{alt}">']

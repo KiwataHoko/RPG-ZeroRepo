@@ -19,6 +19,7 @@ class ContentBrief:
     tone: str = ""
     locale: str = "en"
     depth: str = "standard"
+    findings_title: str = "Additional findings"
     selected_claim_ids: tuple[str, ...] | None = None
 
 
@@ -51,6 +52,12 @@ class ResearchToContentMapper:
     ) -> ContentMappingResult:
         if research_graph.domain_schema.name != "research":
             raise ValueError("source graph must use the research domain schema")
+        source_issues = research_graph.validate()
+        if source_issues:
+            summary = ", ".join(
+                f"{issue.kind}@{issue.location}" for issue in source_issues
+            )
+            raise ValueError(f"invalid research graph: {summary}")
 
         claims = research_graph.get_nodes_by_type("claim")
         claim_by_id = {claim.id: claim for claim in claims}
@@ -128,7 +135,7 @@ class ResearchToContentMapper:
                 content_graph,
                 section_id,
                 document_id,
-                title="Additional findings",
+                title=brief.findings_title,
                 data={"kind": "findings"},
             )
             if previous_section_id is not None:

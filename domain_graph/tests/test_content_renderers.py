@@ -117,3 +117,19 @@ def test_non_paragraph_blocks_keep_visible_citation_markers():
 
     assert "```python\nprint('grounded')\n```\n[^citation]" in markdown
     assert '<p class="citations"><sup>' in html
+
+
+def test_markdown_renderer_uses_a_safe_fence_for_backticks_in_code():
+    adapter = ContentDomainAdapter()
+    graph = adapter.create_document("fence", "document", title="Fence")
+    adapter.add_block(
+        graph,
+        "block",
+        "document",
+        kind="code",
+        text="before\n```\nafter",
+    )
+
+    rendered = MarkdownRenderer().render(graph)
+
+    assert "````\nbefore\n```\nafter\n````" in rendered
