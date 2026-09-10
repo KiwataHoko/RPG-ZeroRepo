@@ -5,7 +5,7 @@ from .research import RESEARCH_DOMAIN_SCHEMA, ResearchDomainAdapter
 
 __all__ = [
     "CONTENT_DOMAIN_SCHEMA",
-    "ContentDomainAdapter",
     "RESEARCH_DOMAIN_SCHEMA",
+    "ContentDomainAdapter",
     "ResearchDomainAdapter",
 ]

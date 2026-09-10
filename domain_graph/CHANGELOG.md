@@ -6,6 +6,12 @@
   blocks, assets, citations, and cross-graph source references.
 - Provide focused builders for document structure and citation provenance while
   keeping research-to-content transformation and rendering outside the adapter.
+- Add `ResearchToContentMapper` with stable source references, selective claim
+  mapping, evidence citations, and claim-coverage reporting.
+- Add dependency-free Markdown and escaped HTML renderers for validated content
+  graphs, including explicit sibling ordering and citation references.
+- Add neutral `research-content` and `publish-content` skills without coupling
+  cross-domain content workflows to the CoderMind CLI namespace.
 
 ## 0.1.1 - 2026-09-09
 

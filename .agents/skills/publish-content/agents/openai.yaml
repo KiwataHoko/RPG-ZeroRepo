@@ -1,0 +1,4 @@
+interface:
+  display_name: "Publish Content"
+  short_description: "Render validated content graphs to Markdown or HTML"
+  default_prompt: "Use $publish-content to render this content graph as a cited Markdown document."

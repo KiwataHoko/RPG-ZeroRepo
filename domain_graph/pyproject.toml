@@ -32,7 +32,12 @@ Issues = "https://github.com/KiwataHoko/RPG-ZeroRepo/issues"
 Changelog = "https://github.com/KiwataHoko/RPG-ZeroRepo/blob/domain-graph-v0.1.1/domain_graph/CHANGELOG.md"
 
 [tool.setuptools]
-packages = ["domain_graph", "domain_graph.adapters"]
+packages = [
+    "domain_graph",
+    "domain_graph.adapters",
+    "domain_graph.renderers",
+    "domain_graph.transforms",
+]
 
 [tool.setuptools.package-dir]
 domain_graph = "."

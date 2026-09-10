@@ -13,12 +13,13 @@ research graph as the source of truth.
 1. Inspect the research graph and the user's content brief. Resolve the target
    audience, purpose, content type, tone, locale, and desired depth from the
    request; ask only when a missing choice would materially change the result.
-2. Build one or more document roots with `ContentDomainAdapter.create_document`.
-   Represent structure with sections and blocks. Keep renderer details such as
-   Markdown syntax, PDF layout, and slide styling out of the graph.
-3. Create a `source_ref` for every research node used by factual content. Link
-   blocks with `derived_from` and citations with `cites`. Preserve the source
-   graph identifier, source node identifier, and snapshot version when known.
+2. Create a `ContentBrief` and run `ResearchToContentMapper.convert`. Use
+   `selected_claim_ids` when the user requests a focused reading; otherwise map
+   every claim. The mapper establishes stable structure, source references,
+   citations, and initial claim coverage.
+3. Refine the mapped outline when prose work is requested. Preserve mapper IDs
+   and every `derived_from`/`cites` edge. Add interpretation as explicitly
+   identified author content rather than attaching unsupported provenance.
 4. Run `ContentDomainAdapter.validate_content`. Resolve every content-schema,
    orphan, citation, and provenance issue before delivery.
 5. Round-trip through `DomainGraph.to_json()` and `DomainGraph.from_json()`.
@@ -35,7 +36,7 @@ research graph as the source of truth.
 - Mark interpretation or author opinion in block data when it is not derived
   from a research node.
 
-The adapter contract and examples live in
+The mapper, adapter contract, and examples live in
 [`domain_graph/README.md`](../../../domain_graph/README.md). This skill stops at
 the portable content graph; use a publishing workflow once a concrete output
 format is requested.

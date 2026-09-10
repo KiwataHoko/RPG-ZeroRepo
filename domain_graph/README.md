@@ -142,3 +142,48 @@ layout, or slide styling from entering the portable content graph.
 invariants: structural nodes must belong to a document, source references must
 identify an external graph and node, and provenance relations must target a
 `source_ref`. Each citation must have exactly one outgoing `cites` relation.
+
+## Research-to-content transformation
+
+`ResearchToContentMapper` produces a deterministic editorial outline from a
+research graph. It groups selected claims under their research questions,
+places supporting evidence after each claim, creates source references and
+citations, and reports unused or unsupported claims.
+
+```python
+from domain_graph.transforms import ContentBrief, ResearchToContentMapper
+
+result = ResearchToContentMapper().convert(
+    research_graph,
+    ContentBrief(
+        title="A practical guide",
+        audience="general",
+        selected_claim_ids=("claim-1", "claim-3"),
+    ),
+    snapshot_version=4,
+)
+
+content_graph = result.graph
+assert result.validation_issues == ()
+print(result.unsupported_claim_ids)
+```
+
+The mapper structures grounded content; it does not ask a model to invent or
+polish prose. Editorial revisions can update block text while preserving stable
+IDs and provenance edges.
+
+## Markdown and HTML rendering
+
+Renderers consume validated content graphs and do not modify them:
+
+```python
+from domain_graph.renderers import HtmlRenderer, MarkdownRenderer
+
+markdown = MarkdownRenderer().render(content_graph)
+html = HtmlRenderer().render(content_graph)
+```
+
+Both renderers honor `precedes` relationships between siblings and reject
+ordering cycles. Markdown emits source footnotes. HTML escapes text and
+attribute values and emits linked reference entries. When a graph contains
+multiple document roots, pass `document_id=` explicitly.

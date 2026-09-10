@@ -12,7 +12,8 @@ skill -> pipeline/service -> domain adapter -> domain graph -> renderer/codec
 The `cmind-` prefix is reserved for workflows that invoke the `cmind` CLI or
 operate on CoderMind-owned artifacts. Cross-domain capabilities use neutral,
 action-oriented names. For example, `research-content` converts grounded
-research into a portable content graph without depending on CoderMind.
+research into a portable content graph, while `publish-content` renders a valid
+content graph. Neither depends on CoderMind.
 
 ## Sources of truth
 

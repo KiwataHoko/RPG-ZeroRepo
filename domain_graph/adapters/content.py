@@ -1,12 +1,11 @@
 """Content-domain adapter for reusable, source-traceable publications."""
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 from ..adapter import DomainAdapter
 from ..graph import DomainGraph, ValidationIssue
 from ..model import DomainNode
 from ..schema import DomainSchema, RelationSpec
-
 
 CONTENT_DOMAIN_SCHEMA = DomainSchema(
     name="content",
@@ -30,7 +29,7 @@ CONTENT_DOMAIN_SCHEMA = DomainSchema(
 )
 
 
-def _merge_data(data: Optional[Dict[str, Any]], **fields: Any) -> Dict[str, Any]:
+def _merge_data(data: dict[str, Any] | None, **fields: Any) -> dict[str, Any]:
     payload = dict(data or {})
     payload.update({key: value for key, value in fields.items() if value is not None})
     return payload
@@ -49,7 +48,7 @@ class ContentDomainAdapter(DomainAdapter):
         *,
         title: str = "",
         content_type: str = "article",
-        data: Optional[Dict[str, Any]] = None,
+        data: dict[str, Any] | None = None,
         strict_schema: bool = True,
     ) -> DomainGraph:
         """Create a content graph with its document root."""
@@ -69,7 +68,7 @@ class ContentDomainAdapter(DomainAdapter):
         parent_id: str,
         *,
         title: str = "",
-        data: Optional[Dict[str, Any]] = None,
+        data: dict[str, Any] | None = None,
     ) -> DomainNode:
         """Add a section below a document or another section."""
         node = graph.add_node(section_id, "section", name=title, data=data)
@@ -84,7 +83,7 @@ class ContentDomainAdapter(DomainAdapter):
         *,
         kind: str,
         text: str = "",
-        data: Optional[Dict[str, Any]] = None,
+        data: dict[str, Any] | None = None,
     ) -> DomainNode:
         """Add an ordered-content candidate below a document section."""
         node = graph.add_node(
@@ -103,8 +102,8 @@ class ContentDomainAdapter(DomainAdapter):
         source_graph: str,
         source_node_id: str,
         name: str = "",
-        snapshot_version: Optional[int] = None,
-        data: Optional[Dict[str, Any]] = None,
+        snapshot_version: int | None = None,
+        data: dict[str, Any] | None = None,
     ) -> DomainNode:
         """Add a stable reference to a node owned by another domain graph."""
         return graph.add_node(
@@ -126,8 +125,8 @@ class ContentDomainAdapter(DomainAdapter):
         parent_id: str,
         source_ref_id: str,
         *,
-        locator: Optional[str] = None,
-        data: Optional[Dict[str, Any]] = None,
+        locator: str | None = None,
+        data: dict[str, Any] | None = None,
     ) -> DomainNode:
         """Add a citation at a content location and link it to its source."""
         node = graph.add_node(
@@ -139,7 +138,7 @@ class ContentDomainAdapter(DomainAdapter):
         graph.add_edge(citation_id, source_ref_id, "cites")
         return node
 
-    def validate_content(self, graph: DomainGraph) -> Tuple[ValidationIssue, ...]:
+    def validate_content(self, graph: DomainGraph) -> tuple[ValidationIssue, ...]:
         """Validate content structure and cross-graph provenance conventions."""
         issues = list(graph.validate())
         if graph.domain_schema.name != self.schema.name:
@@ -163,9 +162,7 @@ class ContentDomainAdapter(DomainAdapter):
                 )
             )
         reachable = {
-            node.id
-            for document in documents
-            for node in graph.descendants(document.id)
+            node.id for document in documents for node in graph.descendants(document.id)
         }
         structural_types = {"section", "block", "asset", "citation"}
         for node in graph.nodes.values():
