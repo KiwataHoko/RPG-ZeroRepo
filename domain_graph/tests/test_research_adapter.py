@@ -41,3 +41,16 @@ def test_reference_adapter_does_not_require_coder_mind_symbols():
     graph.add_edge("evidence-1", "claim-1", "supports")
 
     assert graph.get_nodes_by_type("claim")[0].id == "claim-1"
+
+
+def test_research_schema_supports_theory_comparison():
+    adapter = ResearchDomainAdapter()
+    graph = adapter.create_graph("research", strict_schema=True)
+    graph.add_node("q1", "question")
+    graph.add_node("t1", "theory")
+    graph.add_node("c1", "claim")
+    graph.add_edge("q1", "t1", "contains")
+    graph.add_edge("q1", "c1", "contains")
+    graph.add_edge("t1", "c1", "explains")
+
+    assert graph.validate() == ()

@@ -26,6 +26,9 @@ classifiers = [
 ]
 dependencies = []
 
+[project.scripts]
+domain-graph-research = "domain_graph.workflows.research:main"
+
 [project.urls]
 Homepage = "https://github.com/KiwataHoko/RPG-ZeroRepo/tree/domain-graph-v0.2.0/domain_graph"
 Repository = "https://github.com/KiwataHoko/RPG-ZeroRepo"
@@ -38,6 +41,7 @@ packages = [
     "domain_graph.adapters",
     "domain_graph.renderers",
     "domain_graph.transforms",
+    "domain_graph.workflows",
 ]
 
 [tool.setuptools.package-dir]

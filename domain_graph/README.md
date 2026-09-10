@@ -99,6 +99,24 @@ The adapter is intentionally outside the core root API. New domains can add
 their own adapters without modifying the graph implementation or extending a
 central enum.
 
+### Checkpointed research workflow
+
+`ResearchBuildPipeline` applies the ZeroRepo workflow pattern to research:
+specification, dependency-planned discovery, adversarial challenge, synthesis,
+and gated finalization. It persists `.research/research-spec.json`,
+`research-plan.json`, and `research-state.jsonl`, so interrupted work resumes
+without replacing prior evidence.
+
+```bash
+domain-graph-research --workspace . init --question "What is earning?"
+domain-graph-research --workspace . status
+```
+
+Only ready tasks may start. Completed retrieval tasks must record source IDs,
+types, stable locators, and access dates. `finalize` cross-checks those records
+against the Research Graph and requires competing theories, supporting evidence,
+and contradictory evidence before emitting the final graph and coverage report.
+
 ### Starting research in Codex
 
 The repository's neutral skills separate evidence work from editorial and

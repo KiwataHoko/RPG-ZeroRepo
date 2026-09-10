@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Add a checkpointed `ResearchBuildPipeline` with a dependency-ordered task DAG,
+  resumable state log, agent-friendly CLI, and gated finalization.
+- Extend `ResearchDomainAdapter` with theory comparison and semantic validation
+  for source provenance, evidence locators, claim ownership, and counterexamples.
+
 ## 0.2.0 - 2026-09-10
 
 - Add `ContentDomainAdapter` for format-neutral documents, sections, content
