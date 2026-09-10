@@ -345,11 +345,21 @@ class ResearchBuildPipeline:
         for task in plan.tasks:
             for source in task.result.get("sources", ()):
                 source_id = str(source["id"])
-                if source_id in source_records and source_records[source_id] != source:
+                if source_id not in source_records:
+                    source_records[source_id] = dict(source)
+                    continue
+                merged = source_records[source_id]
+                conflicts = {
+                    key
+                    for key, value in source.items()
+                    if key in merged and merged[key] != value
+                }
+                if conflicts:
                     raise ValueError(
-                        f"conflicting retrieval records for source {source_id!r}"
+                        f"conflicting retrieval records for source {source_id!r}: "
+                        + ", ".join(sorted(conflicts))
                     )
-                source_records[source_id] = source
+                merged.update(source)
 
         adapter = ResearchDomainAdapter()
         graph = adapter.create_graph(

@@ -145,7 +145,7 @@ def _task_result(task_id):
             ],
         },
         "counterexample-search": {
-            "sources": [source_textbook, source_paper],
+            "sources": [source_textbook, {**source_paper, "title": "Rent paper"}],
             "counterexamples": [
                 {
                     "id": "e:value-",
