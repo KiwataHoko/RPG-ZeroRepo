@@ -36,7 +36,7 @@ research graph as the source of truth.
 - Mark interpretation or author opinion in block data when it is not derived
   from a research node.
 
-The mapper, adapter contract, and examples live in
-[`domain_graph/README.md`](../../../domain_graph/README.md). This skill stops at
-the portable content graph; use a publishing workflow once a concrete output
-format is requested.
+The mapper, adapter contract, and examples live in the
+[Domain Graph 0.2.0 guide](https://github.com/KiwataHoko/RPG-ZeroRepo/blob/domain-graph-v0.2.0/domain_graph/README.md).
+This skill stops at the portable content graph; use a publishing workflow once
+a concrete output format is requested.

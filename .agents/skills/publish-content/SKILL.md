@@ -27,4 +27,4 @@ rendering step; do not encode those layout rules back into the Content Graph.
 
 Completion requires a valid source graph, a non-empty rendered document, and
 preserved citation references. API examples live in
-[`domain_graph/README.md`](../../../domain_graph/README.md).
+the [Domain Graph 0.2.0 guide](https://github.com/KiwataHoko/RPG-ZeroRepo/blob/domain-graph-v0.2.0/domain_graph/README.md).

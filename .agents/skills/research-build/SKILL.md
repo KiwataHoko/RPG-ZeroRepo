@@ -50,7 +50,8 @@ claims can be inspected independently of the eventual article or report.
 - Do not manufacture agreement by dropping contrary findings. Report a claim as
   unsupported when adequate evidence was not found.
 
-The adapter contract and a runnable graph example live in
-[`domain_graph/README.md`](../../../domain_graph/README.md). This skill stops at
-the research graph. Use `$research-content` to map validated findings into a
-content graph, then `$publish-content` to render Markdown or HTML.
+The adapter contract and a runnable graph example live in the
+[Domain Graph 0.2.0 guide](https://github.com/KiwataHoko/RPG-ZeroRepo/blob/domain-graph-v0.2.0/domain_graph/README.md).
+This skill stops at the research graph. Use `$research-content` to map validated
+findings into a content graph, then `$publish-content` to render Markdown or
+HTML.
