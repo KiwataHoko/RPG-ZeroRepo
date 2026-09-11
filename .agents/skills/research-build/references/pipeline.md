@@ -13,8 +13,9 @@ domain-graph-research --workspace . init \
   --success-criterion "Observable completion criterion"
 ```
 
-`status` is authoritative. Execute every ready task, repeat after each
-completion, and stop only after `complete` is true.
+Both `--constraint` and `--success-criterion` are repeatable and each group must
+contain at least one non-empty value. `status` is authoritative. Execute every
+ready task, repeat after each completion, and stop only after `complete` is true.
 
 ## Execute one task
 
@@ -31,6 +32,11 @@ domain-graph-research --workspace . fail TASK_ID \
   --result-file .research/results/TASK_ID.failure.json
 ```
 
+The CLI copies the exact submitted payload to
+`.research/checkpoints/TASK_ID/attempt-NNNN.completed.json` or
+`attempt-NNNN.failed.json` and removes write permission. Treat these files as
+the audit record; create a new attempt instead of editing one.
+
 Required non-empty result fields:
 
 | Task | Fields |
@@ -43,16 +49,32 @@ Required non-empty result fields:
 | `discriminatory-tests` | `comparisons` |
 | `synthesize` | `claim_ids`, `revisions` |
 
-Every retrieved source record contains `id`, `source_type`, `locator`, and
-`accessed_at`. The locator is the URL, DOI, ISBN, repository path, or document
-ID actually opened. Preserve page, chapter, section, table, or timestamp in the
-evidence node.
+Every retrieved source record contains `id`, `source_type`, `locator`,
+`accessed_at`, and `authenticity_review`. The review has `status: "passed"` and
+a non-empty `method` describing the publisher, repository, registry, or primary
+record checked. Allowed source types are `book`, `dataset`,
+`government_report`, `official_statistics`, `paper`,
+`peer_reviewed_article`, `primary_document`, `standards_document`, `textbook`,
+and `working_paper`; a self-authored analysis is not a source.
+
+Use a URL, DOI, ISBN-13, repository path, or document ID that was actually
+opened. URL and DOI syntax and the ISBN-13 checksum must pass. Sources are
+normalized and deduplicated by DOI first, ISBN second, then URL; aliases resolve
+to one graph source and therefore cannot inflate coverage.
 
 Each theory contains `id`, `name`, `mechanism`, `boundary_conditions`,
 `failure_conditions`, and `predictions`. Each claim contains `id`, `name`, and
-`theory_ids`. Evidence and counterexample records contain `id`, `name`,
-`claim_id`, `source_id`, `locator`, and `relation`; their relations are
-`supports` and `contradicts`, respectively.
+`theory_ids`. Supporting evidence contains `id`, `name`, `claim_id`,
+`source_id`, `locator`, `relation: "supports"`, a concrete `observation`, and
+`reasoning` that states why the observation supports the claim.
+
+A counterexample contains `id`, `name`, `claim_id`, `source_id`, `locator`,
+`relation: "contradicts"`, `challenged_prediction`, `observation`,
+`conflict_reason`, `rival_theory_id`, `rival_prediction`, and `logic_review`.
+The logic review has `status: "passed"` and a reason. The challenged prediction
+must be declared by a theory explaining the claim; the rival prediction must be
+declared by a different candidate theory. Preserve page, chapter, section,
+table, or timestamp in every evidence locator.
 
 When an upgraded result contract invalidates an older checkpoint, reopen it and
 its transitive dependents:
@@ -71,5 +93,6 @@ domain-graph-research --workspace . finalize
 ```
 
 Finalization cross-checks the graph against retrieval and counterexample
-checkpoints, performs semantic validation and a JSON round trip, then writes
+checkpoints, counts only authenticity- and logic-reviewed coverage, performs
+semantic validation and a JSON round trip, then writes
 `.research/research.domain-graph.json` and `.research/coverage-report.json`.

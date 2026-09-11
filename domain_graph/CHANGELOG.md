@@ -6,6 +6,11 @@
   resumable state log, agent-friendly CLI, and gated finalization.
 - Extend `ResearchDomainAdapter` with theory comparison and semantic validation
   for source provenance, evidence locators, claim ownership, and counterexamples.
+- Require explicit research constraints and success criteria; validate source
+  types, URLs, DOIs, ISBN-13 checksums, and authenticity reviews.
+- Canonically deduplicate sources and require observation/reasoning records plus
+  prediction-linked, logic-reviewed counterexamples before coverage is counted.
+- Preserve each CLI task result as a read-only, attempt-numbered checkpoint.
 
 ## 0.2.0 - 2026-09-10
 

@@ -2,11 +2,13 @@
 
 import argparse
 import json
+import os
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
 from ..adapters import ResearchDomainAdapter
+from ..adapters.research import ALLOWED_SOURCE_TYPES, canonical_source_locator
 from ..graph import DomainGraph, ValidationIssue
 
 
@@ -41,6 +43,32 @@ def _materialized_source_data(source: dict[str, Any]) -> dict[str, Any]:
     return data
 
 
+def _source_key(source: dict[str, Any]) -> tuple[str, str]:
+    return canonical_source_locator(_materialized_source_data(source))
+
+
+def _validate_source(source: dict[str, Any]) -> None:
+    fields = ("id", "source_type", "locator", "accessed_at", "authenticity_review")
+    absent = [field for field in fields if not source.get(field)]
+    if absent:
+        raise ValueError(f"retrieved source is missing fields: {', '.join(absent)}")
+    if source["source_type"] not in ALLOWED_SOURCE_TYPES:
+        raise ValueError(
+            "retrieved source_type must be one of: "
+            + ", ".join(sorted(ALLOWED_SOURCE_TYPES))
+        )
+    canonical_source_locator(_materialized_source_data(source))
+    review = source["authenticity_review"]
+    if (
+        not isinstance(review, dict)
+        or review.get("status") != "passed"
+        or not review.get("method")
+    ):
+        raise ValueError(
+            "retrieved source requires a passed authenticity_review with method"
+        )
+
+
 @dataclass(frozen=True)
 class ResearchBrief:
     question: str
@@ -51,6 +79,12 @@ class ResearchBrief:
     def __post_init__(self):
         if not self.question.strip():
             raise ValueError("research question must be non-empty")
+        if not self.constraints or any(not value.strip() for value in self.constraints):
+            raise ValueError("research constraints must be non-empty")
+        if not self.success_criteria or any(
+            not value.strip() for value in self.success_criteria
+        ):
+            raise ValueError("research success criteria must be non-empty")
 
 
 @dataclass
@@ -281,17 +315,37 @@ class ResearchBuildPipeline:
         self._write_plan(plan)
         self._event("task_started", task_id=task_id)
 
-    def complete_task(self, task_id: str, result: dict[str, Any]) -> None:
+    def complete_task(
+        self,
+        task_id: str,
+        result: dict[str, Any],
+        *,
+        result_file: str | Path | None = None,
+    ) -> None:
         if not result:
             raise ValueError("completed task requires a non-empty result checkpoint")
         plan = self._load_plan()
-        self._validate_task_result(plan.get(task_id), result)
+        task = plan.get(task_id)
+        if task.status != "running":
+            raise ValueError(f"task {task_id!r} is not running")
+        self._validate_task_result(task, result)
+        self._write_attempt_checkpoint(task, "completed", result, result_file)
         plan.complete(task_id, result)
         self._write_plan(plan)
         self._event("task_completed", task_id=task_id)
 
-    def fail_task(self, task_id: str, result: dict[str, Any]) -> None:
+    def fail_task(
+        self,
+        task_id: str,
+        result: dict[str, Any],
+        *,
+        result_file: str | Path | None = None,
+    ) -> None:
         plan = self._load_plan()
+        task = plan.get(task_id)
+        if task.status != "running":
+            raise ValueError(f"task {task_id!r} is not running")
+        self._write_attempt_checkpoint(task, "failed", result, result_file)
         plan.fail(task_id, result)
         self._write_plan(plan)
         self._event("task_failed", task_id=task_id)
@@ -342,24 +396,33 @@ class ResearchBuildPipeline:
                 "synthesize claim_ids must exactly match materialized claim records"
             )
         source_records: dict[str, dict[str, Any]] = {}
+        source_aliases: dict[str, str] = {}
+        canonical_ids: dict[tuple[str, str], str] = {}
         for task in plan.tasks:
             for source in task.result.get("sources", ()):
                 source_id = str(source["id"])
-                if source_id not in source_records:
-                    source_records[source_id] = dict(source)
+                key = _source_key(source)
+                canonical_id = canonical_ids.setdefault(key, source_id)
+                source_aliases[source_id] = canonical_id
+                if canonical_id not in source_records:
+                    source_records[canonical_id] = {**source, "id": canonical_id}
                     continue
-                merged = source_records[source_id]
+                merged = source_records[canonical_id]
                 conflicts = {
                     key
                     for key, value in source.items()
-                    if key in merged and merged[key] != value
+                    if key not in {"id", "title", "locator"}
+                    and key in merged
+                    and merged[key] != value
                 }
                 if conflicts:
                     raise ValueError(
-                        f"conflicting retrieval records for source {source_id!r}: "
+                        f"conflicting retrieval records for source {canonical_id!r}: "
                         + ", ".join(sorted(conflicts))
                     )
-                merged.update(source)
+                merged.update(
+                    {key: value for key, value in source.items() if key != "id"}
+                )
 
         adapter = ResearchDomainAdapter()
         graph = adapter.create_graph(
@@ -427,9 +490,28 @@ class ResearchBuildPipeline:
                         if evidence["relation"] == "contradicts"
                         else "support"
                     ),
+                    "observation": str(evidence["observation"]),
+                    "reasoning": str(
+                        evidence.get("reasoning") or evidence["conflict_reason"]
+                    ),
+                    **{
+                        key: evidence[key]
+                        for key in (
+                            "challenged_prediction",
+                            "conflict_reason",
+                            "rival_theory_id",
+                            "rival_prediction",
+                            "logic_review",
+                        )
+                        if key in evidence
+                    },
                 },
             )
-            graph.add_edge(evidence_id, str(evidence["source_id"]), "derived_from")
+            graph.add_edge(
+                evidence_id,
+                source_aliases[str(evidence["source_id"])],
+                "derived_from",
+            )
             graph.add_edge(
                 evidence_id, str(evidence["claim_id"]), str(evidence["relation"])
             )
@@ -473,14 +555,10 @@ class ResearchBuildPipeline:
             raise ValueError(
                 "research quality gates failed: graph contains sources absent from retrieval checkpoints"
             )
-        locator_fields = ("url", "doi", "isbn", "path", "document_id")
         for source in graph.get_nodes_by_type("source"):
-            graph_locators = {
-                str(source.data[field])
-                for field in locator_fields
-                if source.data.get(field)
-            }
-            if str(ledger_sources[source.id]["locator"]) not in graph_locators:
+            if canonical_source_locator(source.data) != _source_key(
+                ledger_sources[source.id]
+            ):
                 raise ValueError(
                     f"research quality gates failed: source {source.id!r} locator differs from retrieval checkpoint"
                 )
@@ -507,6 +585,17 @@ class ResearchBuildPipeline:
         if roundtrip_issues:
             raise ValueError("round-trip research validation failed")
         theories = graph.get_nodes_by_type("theory")
+        verified_sources = [
+            source
+            for source in graph.get_nodes_by_type("source")
+            if source.data.get("authenticity_review", {}).get("status") == "passed"
+        ]
+        reviewed_counterexamples = [
+            evidence
+            for evidence in graph.get_nodes_by_type("evidence")
+            if evidence.data.get("role") == "counterexample"
+            and evidence.data.get("logic_review", {}).get("status") == "passed"
+        ]
         challenged = 0
         for theory in theories:
             claims = {
@@ -530,6 +619,10 @@ class ResearchBuildPipeline:
                 "claim_count": len(graph.get_nodes_by_type("claim")),
                 "evidence_count": len(graph.get_nodes_by_type("evidence")),
                 "source_count": len(graph.get_nodes_by_type("source")),
+                "verified_source_count": len(verified_sources),
+                "logic_reviewed_counterexample_count": len(
+                    reviewed_counterexamples
+                ),
             },
         )
         self._event("finalized", output=str(output))
@@ -570,12 +663,7 @@ class ResearchBuildPipeline:
             )
         if "sources" in required:
             for source in result["sources"]:
-                fields = ("id", "source_type", "locator", "accessed_at")
-                absent = [field for field in fields if not source.get(field)]
-                if absent:
-                    raise ValueError(
-                        f"retrieved source is missing fields: {', '.join(absent)}"
-                    )
+                _validate_source(source)
         if task.id == "textbook-search" and not any(
             source["source_type"] == "textbook" for source in result["sources"]
         ):
@@ -585,7 +673,16 @@ class ResearchBuildPipeline:
             _require_records(
                 "evidence",
                 result["evidence"],
-                ("id", "name", "claim_id", "source_id", "locator", "relation"),
+                (
+                    "id",
+                    "name",
+                    "claim_id",
+                    "source_id",
+                    "locator",
+                    "relation",
+                    "observation",
+                    "reasoning",
+                ),
             )
             if any(item["relation"] != "supports" for item in result["evidence"]):
                 raise ValueError("evidence-search records must use supports")
@@ -593,12 +690,59 @@ class ResearchBuildPipeline:
             _require_records(
                 "counterexample",
                 result["counterexamples"],
-                ("id", "name", "claim_id", "source_id", "locator", "relation"),
+                (
+                    "id",
+                    "name",
+                    "claim_id",
+                    "source_id",
+                    "locator",
+                    "relation",
+                    "challenged_prediction",
+                    "observation",
+                    "conflict_reason",
+                    "rival_theory_id",
+                    "rival_prediction",
+                    "logic_review",
+                ),
             )
             if any(
                 item["relation"] != "contradicts" for item in result["counterexamples"]
             ):
                 raise ValueError("counterexample-search records must use contradicts")
+            for item in result["counterexamples"]:
+                review = item["logic_review"]
+                if (
+                    not isinstance(review, dict)
+                    or review.get("status") != "passed"
+                    or not review.get("reason")
+                ):
+                    raise ValueError(
+                        "counterexample requires a passed logic_review with reason"
+                    )
+
+    def _write_attempt_checkpoint(
+        self,
+        task: ResearchTask,
+        outcome: str,
+        result: dict[str, Any],
+        result_file: str | Path | None,
+    ) -> Path:
+        """Store the exact accepted payload once under its task attempt number."""
+        checkpoint_dir = self.directory / "checkpoints" / task.id
+        checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        checkpoint = checkpoint_dir / f"attempt-{task.attempts:04d}.{outcome}.json"
+        if checkpoint.exists():
+            raise FileExistsError(f"attempt checkpoint already exists: {checkpoint}")
+        if result_file is not None:
+            payload = Path(result_file).read_bytes()
+            if json.loads(payload) != result:
+                raise ValueError("result file changed before checkpointing")
+        else:
+            payload = (json.dumps(result, ensure_ascii=False, indent=2) + "\n").encode()
+        descriptor = os.open(checkpoint, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o444)
+        with os.fdopen(descriptor, "wb") as stream:
+            stream.write(payload)
+        return checkpoint
 
     def _load_plan(self) -> ResearchPlan:
         if not self.plan_path.exists():
@@ -681,7 +825,9 @@ def main(argv: list[str] | None = None) -> int:
         }
     elif args.command in {"complete", "fail"}:
         result = json.loads(Path(args.result_file).read_text(encoding="utf-8"))
-        getattr(pipeline, f"{args.command}_task")(args.task_id, result)
+        getattr(pipeline, f"{args.command}_task")(
+            args.task_id, result, result_file=args.result_file
+        )
         payload = {
             "type": f"task_{args.command}d",
             "task_id": args.task_id,

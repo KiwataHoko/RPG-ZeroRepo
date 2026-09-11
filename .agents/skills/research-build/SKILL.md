@@ -12,10 +12,13 @@ research is unfinished until its task DAG and semantic quality gates pass.
 
 1. Read [the pipeline protocol](references/pipeline.md), then run
    `domain-graph-research --workspace . status`. Initialize only when the
-   workspace has no research checkpoint.
+   workspace has no research checkpoint. Encode the material constraints and
+   observable success criteria at initialization; the pipeline rejects an
+   underspecified brief.
 2. Execute only task IDs returned in `ready_task_ids`. Start a task before doing
    its work, use the relevant source tools, and save the required result record
-   before marking it complete.
+   before marking it complete. The CLI preserves each submitted record as an
+   immutable, attempt-numbered checkpoint.
 3. Continue through specification, discovery, challenge, and synthesis. A
    failed task remains a checkpointed retry; resume it instead of replacing the
    plan or writing the final graph directly.
@@ -45,9 +48,10 @@ research is unfinished until its task DAG and semantic quality gates pass.
   source provenance.
 - Do not manufacture agreement by dropping contrary findings. Report a claim as
   unsupported when adequate evidence was not found.
-- A source counts only when its stable locator and access date were captured in
-  a completed retrieval task. A theory counts only when it has both explained
-  claims and contradictory evidence.
+- A source counts only after its canonical locator and authenticity review pass.
+  A counterexample counts only after its prediction links and logic review pass.
+  The detailed source, evidence, and challenge contracts are authoritative in
+  [the pipeline protocol](references/pipeline.md).
 
 When `domain-graph-research` is unavailable or lacks these commands, report the
 missing workflow version. A handwritten replacement graph is not a fallback.

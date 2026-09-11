@@ -108,17 +108,25 @@ and gated finalization. It persists `.research/research-spec.json`,
 without replacing prior evidence.
 
 ```bash
-domain-graph-research --workspace . init --question "What is earning?"
+domain-graph-research --workspace . init \
+  --question "What is earning?" \
+  --constraint "Do not invent formulas" \
+  --success-criterion "Every theory faces a discriminating counterexample"
 domain-graph-research --workspace . status
 ```
 
-Only ready tasks may start. Completed retrieval tasks must record source IDs,
-types, stable locators, and access dates. `finalize` cross-checks those records
-against the Research Graph and requires competing theories, supporting evidence,
-and contradictory evidence before emitting the final graph and coverage report.
-The `materialize` command deterministically constructs the draft graph from task
-checkpoints; `reopen` resets an invalid task and every transitive dependent so
-older checkpoint contracts can be upgraded without restarting the study.
+The brief requires material constraints and observable success criteria. Only
+ready tasks may start. Retrieval records use validated URLs, DOIs, or ISBN-13s,
+canonical source deduplication, and an explicit authenticity review. Evidence
+records carry a concrete observation, locator, and reasoning; counterexamples
+also bind a challenged prediction to a different rival theory's prediction and
+must pass a logic review.
+
+The CLI stores every submitted result as a read-only, attempt-numbered file under
+`.research/checkpoints/`. `materialize` deterministically constructs the draft
+graph from accepted task results, and `reopen` resets an invalid task and every
+transitive dependent. `finalize` counts only quality-gated sources and logical
+counterexamples before emitting the final graph and coverage report.
 
 ### Starting research in Codex
 
